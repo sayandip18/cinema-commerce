@@ -35,7 +35,7 @@ function MenuItemCard({ item }: { item: MenuItem }) {
           </ThemedText>
           <View style={styles.cardFooter}>
             <ThemedText style={styles.price}>
-              Rs{Number(item.basePrice).toFixed(2)}
+              Rs {Number(item.basePrice).toFixed(2)}
             </ThemedText>
             {item.lowStock && (
               <ThemedText style={styles.lowStock}>Low stock</ThemedText>
@@ -76,7 +76,7 @@ function MenuItemCard({ item }: { item: MenuItem }) {
         </ThemedText>
         <View style={styles.cardFooter}>
           <ThemedText style={styles.price}>
-            Rs{Number(item.basePrice).toFixed(2)}
+            Rs {Number(item.basePrice).toFixed(2)}
           </ThemedText>
           {item.lowStock && (
             <ThemedText style={styles.lowStock}>Low stock</ThemedText>
@@ -120,7 +120,7 @@ function CartSummary() {
           {totalItems} {totalItems === 1 ? "item" : "items"}
         </ThemedText>
         <ThemedText style={styles.cartTotal}>
-          Rs{totalPrice.toFixed(2)}
+          Rs {totalPrice.toFixed(2)}
         </ThemedText>
       </View>
       <Pressable

@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import Redis from 'ioredis';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderRepository } from './order.repository';
@@ -12,6 +14,7 @@ import { MenuRepository } from '../menu/menu.repository';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 const TAX_RATE = 0.05;
+const RESERVATION_TTL_SECONDS = 420; // 7 minutes
 
 @Injectable()
 export class OrderService {
@@ -20,9 +23,20 @@ export class OrderService {
     private readonly inventoryRepository: InventoryRepository,
     private readonly menuRepository: MenuRepository,
     private readonly dataSource: DataSource,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
 
   async placeOrder(userId: string, dto: CreateOrderDto): Promise<Order> {
+    if (dto.idempotencyKey) {
+      const existing = await this.orderRepository.findByIdempotencyKey(
+        userId,
+        dto.idempotencyKey,
+      );
+      if (existing) {
+        return existing;
+      }
+    }
+
     return this.dataSource.transaction(async (manager) => {
       let foodCost = 0;
       const orderItems: OrderItem[] = [];
@@ -70,10 +84,26 @@ export class OrderService {
       order.foodCost = foodCost;
       order.taxes = taxes;
       order.total = total;
-      order.status = OrderStatus.PLACED;
+      order.status = OrderStatus.PENDING_PAYMENT;
+      order.idempotencyKey = dto.idempotencyKey ?? null;
       order.items = orderItems;
 
-      return this.orderRepository.saveWithManager(manager, order);
+      const saved = await this.orderRepository.saveWithManager(manager, order);
+
+      const reservationData = JSON.stringify(
+        dto.items.map((i) => ({
+          menuItemId: i.menuItemId,
+          quantity: i.quantity,
+        })),
+      );
+      await this.redis.set(
+        `reservation:${saved.id}`,
+        reservationData,
+        'EX',
+        RESERVATION_TTL_SECONDS,
+      );
+
+      return saved;
     });
   }
 

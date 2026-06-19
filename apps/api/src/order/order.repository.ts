@@ -25,6 +25,16 @@ export class OrderRepository {
     });
   }
 
+  async findByIdempotencyKey(
+    userId: string,
+    idempotencyKey: string,
+  ): Promise<Order | null> {
+    return this.repository.findOne({
+      where: { userId, idempotencyKey },
+      relations: { items: true },
+    });
+  }
+
   async saveWithManager(manager: EntityManager, order: Order): Promise<Order> {
     return manager.save(Order, order);
   }

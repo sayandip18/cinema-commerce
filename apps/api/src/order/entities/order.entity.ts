@@ -13,7 +13,10 @@ import { Theatre } from '../../theatre/entities/theatre.entity';
 import { OrderItem } from './order-item.entity';
 
 export enum OrderStatus {
+  PENDING_PAYMENT = 'pending-payment',
   PLACED = 'placed',
+  CANCELLED = 'cancelled',
+  CANCELLED_DUE_TO_TIMEOUT = 'cancelled-due-to-timeout',
   PREPARING = 'preparing',
   READY = 'ready',
   SEAT_DELIVERED = 'seat-delivered',
@@ -22,6 +25,10 @@ export enum OrderStatus {
 @Entity('orders')
 @Index('IDX_ORDER_USER', ['userId'])
 @Index('IDX_ORDER_THEATRE', ['theatreId'])
+@Index('IDX_ORDER_IDEMPOTENCY', ['userId', 'idempotencyKey'], {
+  unique: true,
+  where: '"idempotencyKey" IS NOT NULL',
+})
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -55,10 +62,13 @@ export class Order {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   total: number;
 
+  @Column({ type: 'varchar', length: 100, nullable: true, unique: false })
+  idempotencyKey: string | null;
+
   @Column({
     type: 'enum',
     enum: OrderStatus,
-    default: OrderStatus.PLACED,
+    default: OrderStatus.PENDING_PAYMENT,
   })
   status: OrderStatus;
 

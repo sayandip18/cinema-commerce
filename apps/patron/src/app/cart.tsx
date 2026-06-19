@@ -1,12 +1,27 @@
-import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/hooks/use-theme";
 import { useCartStore, type CartItem } from "@/stores/cart-store";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
+import { showtimeApi } from "@/lib/showtime-api";
+import { orderApi } from "@/lib/order-api";
+
+function generateIdempotencyKey(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
 
 const TAX_RATE = 0.05;
 
@@ -22,7 +37,7 @@ function CartItemRow({ item }: { item: CartItem }) {
       <View style={styles.itemInfo}>
         <ThemedText style={styles.itemName}>{item.name}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          Rs{Number(item.basePrice).toFixed(2)} each
+          Rs {Number(item.basePrice).toFixed(2)} each
         </ThemedText>
       </View>
       <View style={styles.itemRight}>
@@ -48,7 +63,7 @@ function CartItemRow({ item }: { item: CartItem }) {
           </Pressable>
         </View>
         <ThemedText style={styles.lineTotal}>
-          Rs{lineTotal.toFixed(2)}
+          Rs {lineTotal.toFixed(2)}
         </ThemedText>
       </View>
     </View>
@@ -59,10 +74,78 @@ export default function CartScreen() {
   const theme = useTheme();
   const router = useRouter();
   const items = useCartStore((s) => s.items);
+  const clearCart = useCartStore((s) => s.clearCart);
   const totalPrice = useCartStore((s) => s.totalPrice());
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const { data: showtime } = useQuery({
+    queryKey: ["currentShowtime"],
+    queryFn: showtimeApi.getCurrent,
+  });
 
   const tax = totalPrice * TAX_RATE;
   const grandTotal = totalPrice + tax;
+
+  const pollOrderStatus = async (orderId: string): Promise<string> => {
+    const maxAttempts = 15;
+    const intervalMs = 1000;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      const order = await orderApi.getOrder(orderId);
+      if (order.status !== "pending-payment") {
+        return order.status;
+      }
+    }
+
+    return "pending-payment";
+  };
+
+  const handleCheckout = async () => {
+    if (!showtime || items.length === 0) return;
+
+    setIsCheckingOut(true);
+    try {
+      const order = await orderApi.placeOrder({
+        theatreId: showtime.theatreId,
+        screenNumber: showtime.screen,
+        seatNumber: showtime.seatNumber,
+        items: items.map((i) => ({
+          menuItemId: i.menuItemId,
+          quantity: i.quantity,
+        })),
+        idempotencyKey: generateIdempotencyKey(),
+      });
+
+      await orderApi.pay(order.id);
+
+      const finalStatus = await pollOrderStatus(order.id);
+
+      if (finalStatus === "placed") {
+        clearCart();
+        Alert.alert("Order Placed", "Your order has been confirmed!");
+        router.back();
+      } else if (finalStatus === "cancelled") {
+        Alert.alert(
+          "Payment Failed",
+          "Your payment was declined. Please try again.",
+        );
+      } else if (finalStatus === "pending-payment") {
+        Alert.alert(
+          "Processing",
+          "Payment is still being processed. Check your orders for updates.",
+        );
+      } else {
+        Alert.alert("Order Issue", `Order status: ${finalStatus}`);
+      }
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Something went wrong";
+      Alert.alert("Checkout Failed", message);
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -111,27 +194,33 @@ export default function CartScreen() {
             >
               <View style={styles.summaryRow}>
                 <ThemedText themeColor="textSecondary">Subtotal</ThemedText>
-                <ThemedText>Rs{totalPrice.toFixed(2)}</ThemedText>
+                <ThemedText>Rs {totalPrice.toFixed(2)}</ThemedText>
               </View>
               <View style={styles.summaryRow}>
                 <ThemedText themeColor="textSecondary">Tax (5%)</ThemedText>
-                <ThemedText>Rs{tax.toFixed(2)}</ThemedText>
+                <ThemedText>Rs {tax.toFixed(2)}</ThemedText>
               </View>
               <View style={[styles.summaryRow, styles.totalRow]}>
                 <ThemedText style={styles.totalLabel}>Total</ThemedText>
                 <ThemedText style={styles.totalValue}>
-                  Rs{grandTotal.toFixed(2)}
+                  Rs {grandTotal.toFixed(2)}
                 </ThemedText>
               </View>
 
               <Pressable
-                onPress={() => console.log("payment initiated")}
+                onPress={handleCheckout}
+                disabled={isCheckingOut || !showtime}
                 style={({ pressed }) => [
                   styles.checkoutButton,
                   pressed && styles.pressed,
+                  isCheckingOut && styles.checkoutDisabled,
                 ]}
               >
-                <ThemedText style={styles.checkoutText}>Checkout</ThemedText>
+                {isCheckingOut ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <ThemedText style={styles.checkoutText}>Checkout</ThemedText>
+                )}
               </Pressable>
             </View>
           </>
@@ -266,6 +355,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
     alignItems: "center",
     marginTop: Spacing.two,
+  },
+  checkoutDisabled: {
+    opacity: 0.6,
   },
   checkoutText: {
     color: "#ffffff",
