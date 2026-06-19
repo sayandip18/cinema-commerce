@@ -123,6 +123,11 @@ export class AuthService {
     return { user: stripPassword(user), tokens };
   }
 
+  async logout(refreshToken: string): Promise<void> {
+    const tokenKey = `refresh:${refreshToken}`;
+    await this.redis.del(tokenKey);
+  }
+
   async refreshTokens(refreshToken: string): Promise<TokenPair> {
     const tokenKey = `refresh:${refreshToken}`;
     const userId = await this.redis.get(tokenKey);

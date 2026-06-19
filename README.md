@@ -166,7 +166,16 @@ pnpm start:dev
 
 The database tables are created automatically on first run.
 
-### 3. Start the Patron app
+### 3. Seed the database
+
+```bash
+cd apps/api
+pnpm seed
+```
+
+This inserts 5 theatres, 7 movies, and 12 showtimes. The script is idempotent — it skips seeding if data already exists.
+
+### 4. Start the Patron app
 
 ```bash
 cd apps/patron

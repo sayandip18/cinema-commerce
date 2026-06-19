@@ -66,6 +66,13 @@ export const authApi = {
       phone,
       otp,
     }),
+
+  logout: (accessToken: string, refreshToken: string) =>
+    authHttp.post(
+      '/auth/logout',
+      { refreshToken },
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    ),
 };
 
 export type { TokenPair, UserData };

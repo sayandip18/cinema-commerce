@@ -115,6 +115,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    try {
+      const accessToken = await tokenStorage.getAccessToken();
+      const refreshToken = await tokenStorage.getRefreshToken();
+      if (accessToken && refreshToken) {
+        await authApi.logout(accessToken, refreshToken);
+      }
+    } catch {
+      // Proceed with local logout even if backend call fails
+    }
     await tokenStorage.clearTokens();
     set({
       user: null,

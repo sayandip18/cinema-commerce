@@ -13,12 +13,16 @@ import { MenuModule } from './menu/menu.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { OrderModule } from './order/order.module';
 import { RefillModule } from './refill/refill.module';
+import { MovieModule } from './movie/movie.module';
+import { ShowtimeModule } from './showtime/showtime.module';
 import { User } from './user/entities/user.entity';
 import { Theatre } from './theatre/entities/theatre.entity';
 import { MenuItem } from './menu/entities/menu-item.entity';
 import { Inventory } from './inventory/entities/inventory.entity';
 import { Order } from './order/entities/order.entity';
 import { OrderItem } from './order/entities/order-item.entity';
+import { Movie } from './movie/entities/movie.entity';
+import { Showtime } from './showtime/entities/showtime.entity';
 
 @Module({
   imports: [
@@ -35,7 +39,7 @@ import { OrderItem } from './order/entities/order-item.entity';
         database: db.database,
         username: db.username,
         password: db.password,
-        entities: [User, Theatre, MenuItem, Inventory, Order, OrderItem],
+        entities: [User, Theatre, MenuItem, Inventory, Order, OrderItem, Movie, Showtime],
         synchronize: true,
       }),
     }),
@@ -46,6 +50,8 @@ import { OrderItem } from './order/entities/order-item.entity';
     InventoryModule,
     OrderModule,
     RefillModule,
+    MovieModule,
+    ShowtimeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,61 +1,108 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
+import { useTheme } from '@/hooks/use-theme';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { showtimeApi } from '@/lib/showtime-api';
+import { menuApi, type MenuItem } from '@/lib/menu-api';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+function MenuItemCard({ item }: { item: MenuItem }) {
+  const theme = useTheme();
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
+      <View style={styles.cardContent}>
+        <ThemedText style={styles.itemName}>{item.name}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+          {item.description}
+        </ThemedText>
+        <View style={styles.cardFooter}>
+          <ThemedText style={styles.price}>${Number(item.basePrice).toFixed(2)}</ThemedText>
+          {item.lowStock && (
+            <ThemedText style={styles.lowStock}>Low stock</ThemedText>
+          )}
+        </View>
+      </View>
+      <Pressable
+        style={({ pressed }) => [
+          styles.addButton,
+          pressed && styles.addButtonPressed,
+        ]}
+      >
+        <ThemedText style={styles.addButtonText}>Add</ThemedText>
+      </Pressable>
+    </View>
   );
 }
 
 export default function HomeScreen() {
+  const theme = useTheme();
+
+  const {
+    data: showtime,
+    isLoading: showtimeLoading,
+    error: showtimeError,
+  } = useQuery({
+    queryKey: ['currentShowtime'],
+    queryFn: showtimeApi.getCurrent,
+  });
+
+  const {
+    data: menuItems,
+    isLoading: menuLoading,
+    error: menuError,
+  } = useQuery({
+    queryKey: ['menu', showtime?.theatreId],
+    queryFn: () => menuApi.getAvailableItems(showtime!.theatreId),
+    enabled: !!showtime?.theatreId,
+  });
+
+  const isLoading = showtimeLoading || menuLoading;
+  const error = showtimeError || menuError;
+
+  const contextLabel = showtime
+    ? `${showtime.theatreName} | Screen ${showtime.screen} | ${showtime.movieTitle} | Seat ${showtime.seatNumber}`
+    : '';
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+        {showtime && (
+          <View style={[styles.contextBar, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="small" numberOfLines={1} style={styles.contextText}>
+              {contextLabel}
+            </ThemedText>
+          </View>
+        )}
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        {isLoading && (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color={theme.textSecondary} />
+          </View>
+        )}
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+        {error && (
+          <View style={styles.centered}>
+            <ThemedText themeColor="textSecondary">
+              Failed to load menu. Please try again.
+            </ThemedText>
+          </View>
+        )}
+
+        {menuItems && (
+          <FlatList
+            data={menuItems}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <MenuItemCard item={item} />}
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            contentContainerStyle={styles.grid}
+            showsVerticalScrollIndicator={false}
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -64,35 +111,80 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
     flexDirection: 'row',
+    justifyContent: 'center',
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
     maxWidth: MaxContentWidth,
+    paddingBottom: BottomTabInset,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
+  contextBar: {
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    paddingVertical: Spacing.two + 4,
+    marginHorizontal: Spacing.three,
+    marginTop: Spacing.two,
+    borderRadius: Spacing.two,
+  },
+  contextText: {
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  grid: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.four,
+  },
+  row: {
+    gap: Spacing.two + 4,
+    marginBottom: Spacing.two + 4,
+  },
+  card: {
+    flex: 1,
+    borderRadius: Spacing.two + 4,
+    padding: Spacing.three,
+    justifyContent: 'space-between',
+  },
+  cardContent: {
+    gap: Spacing.one,
+    marginBottom: Spacing.three,
+  },
+  itemName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginTop: Spacing.one,
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  lowStock: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#e67e22',
+  },
+  addButton: {
+    backgroundColor: '#3c87f7',
+    borderRadius: Spacing.two,
+    paddingVertical: Spacing.two,
+    alignItems: 'center',
+  },
+  addButtonPressed: {
+    opacity: 0.8,
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

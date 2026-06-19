@@ -1,9 +1,11 @@
-import { Body, Controller, Headers, Post } from '@nestjs/common';
+import { Body, Controller, Headers, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { CompleteSignupDto } from './dto/complete-signup.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { LogoutDto } from './dto/logout.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -57,5 +59,12 @@ export class AuthController {
   async refresh(@Body() dto: RefreshTokenDto) {
     const tokens = await this.authService.refreshTokens(dto.refreshToken);
     return { data: tokens };
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout(@Body() dto: LogoutDto) {
+    await this.authService.logout(dto.refreshToken);
+    return { data: { message: 'Logged out' } };
   }
 }
