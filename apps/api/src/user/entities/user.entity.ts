@@ -15,14 +15,14 @@ export class User {
   @Column({ length: 255 })
   name: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   email: string | null;
 
   @Index('IDX_USER_PHONE', { unique: true })
-  @Column({ length: 10, unique: true })
+  @Column({ type: 'varchar', length: 10, unique: true })
   phone: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   password: string | null;
 
   @CreateDateColumn()

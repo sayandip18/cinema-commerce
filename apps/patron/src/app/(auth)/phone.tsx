@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   StyleSheet,
   TextInput,
@@ -6,20 +6,20 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useAuthStore } from '@/stores/auth-store';
-import { Colors, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { useAuthStore } from "@/stores/auth-store";
+import { Colors, Spacing } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
-type Mode = 'signin' | 'signup';
+type Mode = "signin" | "signup";
 
 export default function PhoneScreen() {
-  const [phone, setPhone] = useState('');
-  const [mode, setMode] = useState<Mode>('signin');
+  const [phone, setPhone] = useState("");
+  const [mode, setMode] = useState<Mode>("signin");
   const { signinSendOtp, signupSendOtp, isLoading, error, clearError } =
     useAuthStore();
   const router = useRouter();
@@ -27,14 +27,14 @@ export default function PhoneScreen() {
 
   const handleSubmit = async () => {
     clearError();
-    if (mode === 'signin') {
+    if (mode === "signin") {
       await signinSendOtp(phone);
     } else {
       await signupSendOtp(phone);
     }
     const currentStep = useAuthStore.getState().step;
-    if (currentStep === 'otp-sent') {
-      router.push({ pathname: '/(auth)/otp', params: { mode } });
+    if (currentStep === "otp-sent") {
+      router.push({ pathname: "/(auth)/otp", params: { mode } });
     }
   };
 
@@ -44,11 +44,11 @@ export default function PhoneScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.content}
         >
           <ThemedText type="title" style={styles.title}>
-            {mode === 'signin' ? 'Welcome back' : 'Create account'}
+            {mode === "signin" ? "Welcome back" : "Create account"}
           </ThemedText>
 
           <ThemedText style={styles.subtitle}>
@@ -70,7 +70,7 @@ export default function PhoneScreen() {
             maxLength={10}
             value={phone}
             onChangeText={(text) => {
-              setPhone(text.replace(/\D/g, ''));
+              setPhone(text.replace(/\D/g, ""));
               clearError();
             }}
           />
@@ -91,14 +91,14 @@ export default function PhoneScreen() {
 
           <Pressable
             onPress={() => {
-              setMode(mode === 'signin' ? 'signup' : 'signin');
+              setMode(mode === "signin" ? "signup" : "signin");
               clearError();
             }}
           >
             <ThemedText style={styles.toggleText}>
-              {mode === 'signin'
+              {mode === "signin"
                 ? "Don't have an account? Sign up"
-                : 'Already have an account? Sign in'}
+                : "Already have an account? Sign in"}
             </ThemedText>
           </Pressable>
         </KeyboardAvoidingView>
@@ -116,15 +116,15 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: Spacing.four,
     gap: Spacing.three,
   },
   title: {
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.7,
   },
   input: {
@@ -134,30 +134,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     fontSize: 18,
     letterSpacing: 2,
-    textAlign: 'center',
+    textAlign: "center",
   },
   error: {
-    color: '#EF4444',
-    textAlign: 'center',
+    color: "#EF4444",
+    textAlign: "center",
     fontSize: 14,
   },
   button: {
     backgroundColor: Colors.light.text,
     height: 56,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   buttonDisabled: {
     opacity: 0.4,
   },
   buttonText: {
     color: Colors.light.background,
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 16,
   },
   toggleText: {
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.6,
     fontSize: 14,
   },
