@@ -6,27 +6,26 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from "expo-router/ui";
+import { useRouter } from "expo-router";
 import { Pressable, View, StyleSheet } from "react-native";
 
 import { ThemedText } from "./themed-text";
 import { ThemedView } from "./themed-view";
 
 import { MaxContentWidth, Spacing } from "@/constants/theme";
+import { useCartStore } from "@/stores/cart-store";
 
 export default function AppTabs() {
   return (
-    <Tabs>
+    <Tabs style={{ flex: 1 }}>
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="index" href="/" asChild>
             <TabButton>Order</TabButton>
           </TabTrigger>
-          <TabTrigger name="account" href="/account" asChild>
-            <TabButton>Account</TabButton>
-          </TabTrigger>
         </CustomTabList>
       </TabList>
-      <TabSlot />
+      <TabSlot style={{ flex: 1 }} />
     </Tabs>
   );
 }
@@ -53,6 +52,25 @@ export function TabButton({
   );
 }
 
+function CartButton() {
+  const router = useRouter();
+  const totalItems = useCartStore((s) => s.totalItems());
+
+  return (
+    <Pressable
+      onPress={() => router.push("/cart")}
+      style={({ pressed }) => [styles.cartButton, pressed && styles.pressed]}
+    >
+      <ThemedText style={styles.cartIcon}>&#x1F6D2;</ThemedText>
+      {totalItems > 0 && (
+        <View style={styles.badge}>
+          <ThemedText style={styles.badgeText}>{totalItems}</ThemedText>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 export function CustomTabList(props: TabListProps) {
   return (
     <View {...props} style={styles.tabListContainer}>
@@ -61,6 +79,7 @@ export function CustomTabList(props: TabListProps) {
           Cinema Commerce
         </ThemedText>
         {props.children}
+        <CartButton />
       </ThemedView>
     </View>
   );
@@ -74,6 +93,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
+    zIndex: 10,
   },
   innerContainer: {
     paddingVertical: Spacing.two,
@@ -95,5 +115,31 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
+  },
+  cartButton: {
+    position: "relative",
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+  },
+  cartIcon: {
+    fontSize: 20,
+  },
+  badge: {
+    position: "absolute",
+    top: -2,
+    right: 0,
+    backgroundColor: "#e74c3c",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "700",
+    lineHeight: 14,
   },
 });
