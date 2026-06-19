@@ -24,55 +24,98 @@ async function seed() {
   const menuItemRepo = dataSource.getRepository(MenuItem);
   const inventoryRepo = dataSource.getRepository(Inventory);
 
-  const existingTheatres = await theatreRepo.count();
-  if (existingTheatres > 0) {
-    console.log('Database already seeded. Skipping.');
-    await app.close();
-    return;
+  const [
+    theatreCount,
+    movieCount,
+    showtimeCount,
+    menuItemCount,
+    inventoryCount,
+  ] = await Promise.all([
+    theatreRepo.count(),
+    movieRepo.count(),
+    showtimeRepo.count(),
+    menuItemRepo.count(),
+    inventoryRepo.count(),
+  ]);
+
+  let seededAny = false;
+
+  let allTheatres: Theatre[];
+  if (theatreCount === 0) {
+    console.log('Seeding theatres...');
+    allTheatres = await theatreRepo.save(
+      theatres.map((t) => theatreRepo.create(t)),
+    );
+    seededAny = true;
+  } else {
+    console.log(`Theatres already exist (${theatreCount}). Skipping.`);
+    allTheatres = await theatreRepo.find({ order: { createdAt: 'ASC' } });
   }
 
-  console.log('Seeding theatres...');
-  const savedTheatres = await theatreRepo.save(
-    theatres.map((t) => theatreRepo.create(t)),
-  );
+  let allMovies: Movie[];
+  if (movieCount === 0) {
+    console.log('Seeding movies...');
+    allMovies = await movieRepo.save(
+      movies.map((m) => movieRepo.create(m)),
+    );
+    seededAny = true;
+  } else {
+    console.log(`Movies already exist (${movieCount}). Skipping.`);
+    allMovies = await movieRepo.find({ order: { createdAt: 'ASC' } });
+  }
 
-  console.log('Seeding movies...');
-  const savedMovies = await movieRepo.save(
-    movies.map((m) => movieRepo.create(m)),
-  );
+  if (showtimeCount === 0) {
+    console.log('Seeding showtimes...');
+    await showtimeRepo.save(
+      showtimes.map((s) =>
+        showtimeRepo.create({
+          theatreId: allTheatres[s.theatreIndex].id,
+          movieId: allMovies[s.movieIndex].id,
+          screen: s.screen,
+          startTime: new Date(s.startTime),
+          price: s.price,
+        }),
+      ),
+    );
+    seededAny = true;
+  } else {
+    console.log(`Showtimes already exist (${showtimeCount}). Skipping.`);
+  }
 
-  console.log('Seeding showtimes...');
-  await showtimeRepo.save(
-    showtimes.map((s) =>
-      showtimeRepo.create({
-        theatreId: savedTheatres[s.theatreIndex].id,
-        movieId: savedMovies[s.movieIndex].id,
-        screen: s.screen,
-        startTime: new Date(s.startTime),
-        price: s.price,
-      }),
-    ),
-  );
+  let allMenuItems: MenuItem[];
+  if (menuItemCount === 0) {
+    console.log('Seeding menu items...');
+    allMenuItems = await menuItemRepo.save(
+      menuItems.map((m) => menuItemRepo.create(m)),
+    );
+    seededAny = true;
+  } else {
+    console.log(`Menu items already exist (${menuItemCount}). Skipping.`);
+    allMenuItems = await menuItemRepo.find({ order: { createdAt: 'ASC' } });
+  }
 
-  console.log('Seeding menu items...');
-  const savedMenuItems = await menuItemRepo.save(
-    menuItems.map((m) => menuItemRepo.create(m)),
-  );
+  if (inventoryCount === 0) {
+    console.log('Seeding inventory...');
+    await inventoryRepo.save(
+      inventoryItems.map((inv) =>
+        inventoryRepo.create({
+          theatreId: allTheatres[inv.theatreIndex].id,
+          menuItemId: allMenuItems[inv.menuItemIndex].id,
+          quantity: inv.quantity,
+        }),
+      ),
+    );
+    seededAny = true;
+  } else {
+    console.log(`Inventory already exists (${inventoryCount}). Skipping.`);
+  }
 
-  console.log('Seeding inventory...');
-  await inventoryRepo.save(
-    inventoryItems.map((inv) =>
-      inventoryRepo.create({
-        theatreId: savedTheatres[inv.theatreIndex].id,
-        menuItemId: savedMenuItems[inv.menuItemIndex].id,
-        quantity: inv.quantity,
-      }),
-    ),
-  );
+  if (seededAny) {
+    console.log('Seed complete.');
+  } else {
+    console.log('All tables already populated. Nothing to seed.');
+  }
 
-  console.log(
-    `Seed complete: ${savedTheatres.length} theatres, ${savedMovies.length} movies, ${showtimes.length} showtimes, ${savedMenuItems.length} menu items, ${inventoryItems.length} inventory entries.`,
-  );
   await app.close();
 }
 
