@@ -137,3 +137,40 @@ The Digital Twin generates synthetic demand and drives actual backend APIs to me
 
 - Engineering team
 - Operations team
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- pnpm 10+
+- Docker & Docker Compose
+
+### 1. Start infrastructure
+
+```bash
+docker compose up -d
+```
+
+This starts `patron-db` (Postgres 16) and `patron-redis` (Redis 7).
+
+### 2. Start the API
+
+```bash
+cd apps/api
+cp .env.example .env   # already populated with dev defaults
+pnpm start:dev
+```
+
+The database tables are created automatically on first run.
+
+### 3. Start the Patron app
+
+```bash
+cd apps/patron
+pnpm start
+```
+
+Press `w` for web, `a` for Android, or `i` for iOS.

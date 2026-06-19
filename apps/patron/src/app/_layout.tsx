@@ -1,15 +1,39 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { useEffect } from 'react';
+import { DarkTheme, DefaultTheme, ThemeProvider, useSegments, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useColorScheme } from 'react-native';
+import { useAuthStore } from '@/stores/auth-store';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
-
-export default function TabLayout() {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const segments = useSegments();
+  const router = useRouter();
+  const { step, isHydrated, hydrate } = useAuthStore();
+
+  useEffect(() => {
+    hydrate();
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    const inAuthGroup = (segments as string[])[0] === '(auth)';
+
+    if (step === 'authenticated' && inAuthGroup) {
+      router.replace('/(tabs)' as never);
+    } else if (step !== 'authenticated' && !inAuthGroup) {
+      router.replace('/(auth)/phone' as never);
+    }
+  }, [step, isHydrated, segments]);
+
+  if (!isHydrated) return null;
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
     </ThemeProvider>
   );
 }
