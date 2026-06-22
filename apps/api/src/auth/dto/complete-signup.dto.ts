@@ -1,4 +1,5 @@
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { AgeGroup, Gender } from '../../user/entities/user.entity';
 
 export class CompleteSignupDto {
   @IsString()
@@ -8,4 +9,10 @@ export class CompleteSignupDto {
   @IsOptional()
   @IsEmail({}, { message: 'Invalid email format' })
   email?: string;
+
+  @IsEnum(AgeGroup, { message: 'Invalid age group' })
+  ageGroup: AgeGroup;
+
+  @IsEnum(Gender, { message: 'Invalid gender' })
+  gender: Gender;
 }

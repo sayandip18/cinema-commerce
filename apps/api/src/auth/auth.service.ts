@@ -12,7 +12,7 @@ import Redis from 'ioredis';
 import { randomUUID } from 'crypto';
 import { jwtConfig } from '../config/jwt.config';
 import { UserService } from '../user/user.service';
-import { User } from '../user/entities/user.entity';
+import { User, AgeGroup, Gender } from '../user/entities/user.entity';
 
 function stripPassword(user: User): Omit<User, 'password'> {
   const { password, ...rest } = user;
@@ -76,6 +76,8 @@ export class AuthService {
   async completeSignup(
     signupToken: string,
     name: string,
+    ageGroup: AgeGroup,
+    gender: Gender,
     email?: string,
   ): Promise<{ user: Omit<User, 'password'>; tokens: TokenPair }> {
     let payload: SignupTokenPayload;
@@ -100,6 +102,8 @@ export class AuthService {
       name,
       phone: payload.phone,
       email,
+      ageGroup,
+      gender,
     });
 
     const tokens = await this.generateTokens(user);

@@ -7,6 +7,22 @@ import {
   Index,
 } from 'typeorm';
 
+export enum AgeGroup {
+  UNDER_18 = 'under_18',
+  AGE_18_24 = '18_24',
+  AGE_25_34 = '25_34',
+  AGE_35_44 = '35_44',
+  AGE_45_54 = '45_54',
+  AGE_55_PLUS = '55_plus',
+}
+
+export enum Gender {
+  MALE = 'male',
+  FEMALE = 'female',
+  NON_BINARY = 'non_binary',
+  PREFER_NOT_TO_SAY = 'prefer_not_to_say',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -24,6 +40,12 @@ export class User {
 
   @Column({ type: 'varchar', nullable: true })
   password: string | null;
+
+  @Column({ type: 'enum', enum: AgeGroup })
+  ageGroup: AgeGroup;
+
+  @Column({ type: 'enum', enum: Gender })
+  gender: Gender;
 
   @CreateDateColumn()
   createdAt: Date;

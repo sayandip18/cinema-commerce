@@ -1,28 +1,143 @@
 export const theatres = [
   {
-    name: 'Cineplex Downtown',
-    location: '123 Main St, New York, NY',
-    totalScreens: 6,
-  },
-  {
-    name: 'StarLight IMAX',
-    location: '456 Broadway, New York, NY',
-    totalScreens: 4,
-  },
-  {
-    name: 'Regal Midtown',
-    location: '789 5th Ave, New York, NY',
+    name: 'PVR INOX Nexus',
+    location: 'Koramangala, Bengaluru, Karnataka',
     totalScreens: 8,
   },
   {
-    name: 'AMC Riverside',
-    location: '321 River Rd, Chicago, IL',
+    name: 'INOX Nariman Point',
+    location: 'Marine Drive, Mumbai, Maharashtra',
+    totalScreens: 6,
+  },
+  {
+    name: 'Sathyam Cinemas',
+    location: 'Royapettah, Chennai, Tamil Nadu',
+    totalScreens: 7,
+  },
+  {
+    name: 'Nandan Cinema',
+    location: 'Rabindra Sadan, Kolkata, West Bengal',
     totalScreens: 5,
   },
   {
-    name: 'Galaxy Cinemas',
-    location: '555 Sunset Blvd, Los Angeles, CA',
+    name: 'PVR Lulu Mall',
+    location: 'Edappally, Kochi, Kerala',
+    totalScreens: 9,
+  },
+  {
+    name: 'AMB Cinemas',
+    location: 'Gachibowli, Hyderabad, Telangana',
     totalScreens: 10,
+  },
+  {
+    name: 'Asian Cinemas CMR',
+    location: 'Labbipet, Vijayawada, Andhra Pradesh',
+    totalScreens: 6,
+  },
+  {
+    name: 'Raj Mandir Cinema',
+    location: 'Bhagwan Das Road, Jaipur, Rajasthan',
+    totalScreens: 4,
+  },
+  {
+    name: 'PVR Sahara Mall',
+    location: 'MG Road, Gurugram, Haryana',
+    totalScreens: 7,
+  },
+  {
+    name: 'Wave Cinemas',
+    location: 'Gomti Nagar, Lucknow, Uttar Pradesh',
+    totalScreens: 8,
+  },
+  {
+    name: 'Cinepolis Treasure Island',
+    location: 'CG Road, Ahmedabad, Gujarat',
+    totalScreens: 6,
+  },
+  {
+    name: 'INOX Aashima Mall',
+    location: 'MP Nagar, Bhopal, Madhya Pradesh',
+    totalScreens: 5,
+  },
+  {
+    name: 'PVR Forum Mall',
+    location: 'Elgin Road, Ranchi, Jharkhand',
+    totalScreens: 4,
+  },
+  {
+    name: 'Cinepolis Boring Road',
+    location: 'Boring Road, Patna, Bihar',
+    totalScreens: 5,
+  },
+  {
+    name: 'INOX City Centre',
+    location: 'GS Road, Guwahati, Assam',
+    totalScreens: 4,
+  },
+  {
+    name: 'PVR Magneto Mall',
+    location: 'Labhandi, Raipur, Chhattisgarh',
+    totalScreens: 5,
+  },
+  {
+    name: 'INOX Panjim',
+    location: 'DB Marg, Panaji, Goa',
+    totalScreens: 3,
+  },
+  {
+    name: 'Cinepolis VR Punjab',
+    location: 'Sahibzada Ajit Singh Nagar, Punjab',
+    totalScreens: 7,
+  },
+  {
+    name: 'PVR Esplanade',
+    location: 'Sahid Nagar, Bhubaneswar, Odisha',
+    totalScreens: 5,
+  },
+  {
+    name: 'INOX Regenta',
+    location: 'Rajpur Road, Dehradun, Uttarakhand',
+    totalScreens: 4,
+  },
+  {
+    name: 'PVR Mall Road',
+    location: 'Mall Road, Shimla, Himachal Pradesh',
+    totalScreens: 3,
+  },
+  {
+    name: 'INOX Polo Towers',
+    location: 'MG Marg, Gangtok, Sikkim',
+    totalScreens: 2,
+  },
+  {
+    name: 'Gold Cinema Imphal',
+    location: 'Thangal Bazaar, Imphal, Manipur',
+    totalScreens: 2,
+  },
+  {
+    name: 'Bijou Cinema',
+    location: 'Police Bazaar, Shillong, Meghalaya',
+    totalScreens: 2,
+  },
+  {
+    name: 'Zoram Cinema',
+    location: 'Zarkawt, Aizawl, Mizoram',
+    totalScreens: 2,
+  },
+  {
+    name: 'Nagaland Cinema Hall',
+    location: 'Midland, Dimapur, Nagaland',
+    totalScreens: 2,
+  },
+  {
+    name: 'Rupasi Cinema',
+    location: 'Agartala, Tripura',
+    totalScreens: 2,
+  },
+  {
+    name: 'Cineplex Itanagar',
+    location: 'Ganga Market, Itanagar, Arunachal Pradesh',
+    totalScreens: 2,
   },
 ];
 

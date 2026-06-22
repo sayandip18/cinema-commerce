@@ -35,6 +35,8 @@ export class AuthController {
     const result = await this.authService.completeSignup(
       token,
       dto.name,
+      dto.ageGroup,
+      dto.gender,
       dto.email,
     );
     return { data: result };

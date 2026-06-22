@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserRepository } from './user.repository';
-import { User } from './entities/user.entity';
+import { User, AgeGroup, Gender } from './entities/user.entity';
 
 const SALT_ROUNDS = 10;
 
@@ -24,6 +24,8 @@ export class UserService {
   async createUser(data: {
     name: string;
     phone: string;
+    ageGroup: AgeGroup;
+    gender: Gender;
     email?: string;
     password?: string;
   }): Promise<User> {
@@ -37,6 +39,8 @@ export class UserService {
       phone: data.phone,
       email: data.email ?? null,
       password: hashedPassword,
+      ageGroup: data.ageGroup,
+      gender: data.gender,
     });
   }
 }

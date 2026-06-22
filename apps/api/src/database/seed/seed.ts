@@ -55,9 +55,7 @@ async function seed() {
   let allMovies: Movie[];
   if (movieCount === 0) {
     console.log('Seeding movies...');
-    allMovies = await movieRepo.save(
-      movies.map((m) => movieRepo.create(m)),
-    );
+    allMovies = await movieRepo.save(movies.map((m) => movieRepo.create(m)));
     seededAny = true;
   } else {
     console.log(`Movies already exist (${movieCount}). Skipping.`);

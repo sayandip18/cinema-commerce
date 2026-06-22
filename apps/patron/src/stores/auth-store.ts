@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { tokenStorage } from '@/lib/token-storage';
-import { authApi, type UserData } from '@/lib/auth-api';
+import { authApi, type UserData, type AgeGroup, type Gender } from '@/lib/auth-api';
 
 type AuthStep =
   | 'idle'
@@ -22,7 +22,7 @@ interface AuthState {
 
   signupSendOtp: (phone: string) => Promise<void>;
   signupVerifyOtp: (otp: string) => Promise<void>;
-  signupComplete: (name: string, email?: string) => Promise<void>;
+  signupComplete: (name: string, ageGroup: AgeGroup, gender: Gender, email?: string) => Promise<void>;
 
   signinSendOtp: (phone: string) => Promise<void>;
   signinVerifyOtp: (otp: string) => Promise<void>;
@@ -70,7 +70,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  signupComplete: async (name: string, email?: string) => {
+  signupComplete: async (name: string, ageGroup: AgeGroup, gender: Gender, email?: string) => {
     set({ isLoading: true, error: null });
     const { signupToken } = get();
     if (!signupToken) {
@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
     try {
-      const { data } = await authApi.signupComplete(signupToken, name, email);
+      const { data } = await authApi.signupComplete(signupToken, name, ageGroup, gender, email);
       const { user, tokens } = data.data;
       await tokenStorage.setTokens(tokens.accessToken, tokens.refreshToken);
       set({

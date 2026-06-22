@@ -7,11 +7,16 @@ interface TokenPair {
   refreshToken: string;
 }
 
+type AgeGroup = 'under_18' | '18_24' | '25_34' | '35_44' | '45_54' | '55_plus';
+type Gender = 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
+
 interface UserData {
   id: string;
   name: string;
   email: string | null;
   phone: string;
+  ageGroup: AgeGroup;
+  gender: Gender;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,11 +55,13 @@ export const authApi = {
   signupComplete: (
     signupToken: string,
     name: string,
+    ageGroup: AgeGroup,
+    gender: Gender,
     email?: string,
   ) =>
     authHttp.post<SignupCompleteResponse>(
       '/auth/signup/complete',
-      { name, email },
+      { name, ageGroup, gender, email },
       { headers: { Authorization: `Bearer ${signupToken}` } },
     ),
 
@@ -75,4 +82,4 @@ export const authApi = {
     ),
 };
 
-export type { TokenPair, UserData };
+export type { TokenPair, UserData, AgeGroup, Gender };
