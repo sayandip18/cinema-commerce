@@ -3,7 +3,7 @@ import Redis from 'ioredis';
 import { AvailableMenuItem } from './menu.service';
 
 const KEY_PREFIX = 'menu:available:';
-const TTL_SECONDS = 10;
+const BASE_TTL = 120;
 
 @Injectable()
 export class MenuCacheService {
@@ -16,11 +16,13 @@ export class MenuCacheService {
   }
 
   async set(theatreId: string, items: AvailableMenuItem[]): Promise<void> {
+    const jitter = Math.floor(Math.random() * 30);
+    const finalTTL = BASE_TTL + jitter;
     await this.redis.set(
       KEY_PREFIX + theatreId,
       JSON.stringify(items),
       'EX',
-      TTL_SECONDS,
+      finalTTL,
     );
   }
 
