@@ -86,6 +86,7 @@ export default function CartScreen() {
   const tax = totalPrice * TAX_RATE;
   const grandTotal = totalPrice + tax;
 
+  // TODO: poll using react query?
   const pollOrderStatus = async (orderId: string): Promise<string> => {
     const maxAttempts = 15;
     const intervalMs = 1000;

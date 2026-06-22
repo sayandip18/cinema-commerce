@@ -1,9 +1,9 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DataSource, LessThan } from 'typeorm';
-import Redis from 'ioredis';
 import { Order, OrderStatus } from './entities/order.entity';
 import { Inventory } from '../inventory/entities/inventory.entity';
+import { MenuCacheService } from '../menu/menu-cache.service';
 
 const RESERVATION_TIMEOUT_MS = 7 * 60 * 1000;
 
@@ -13,7 +13,7 @@ export class OrderReservationService {
 
   constructor(
     private readonly dataSource: DataSource,
-    @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    private readonly menuCacheService: MenuCacheService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -72,7 +72,7 @@ export class OrderReservationService {
       await manager.save(Order, locked);
     });
 
-    await this.redis.del(`reservation:${order.id}`);
     this.logger.log(`Order ${order.id} cancelled due to payment timeout`);
+    await this.menuCacheService.invalidate(order.theatreId);
   }
 }

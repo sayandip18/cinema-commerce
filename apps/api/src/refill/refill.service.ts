@@ -6,11 +6,15 @@ import {
 import { OptimisticLockVersionMismatchError } from 'typeorm';
 import { InventoryRepository } from '../inventory/inventory.repository';
 import { Inventory } from '../inventory/entities/inventory.entity';
+import { MenuCacheService } from '../menu/menu-cache.service';
 import { RefillInventoryDto } from './dto/refill-inventory.dto';
 
 @Injectable()
 export class RefillService {
-  constructor(private readonly inventoryRepository: InventoryRepository) {}
+  constructor(
+    private readonly inventoryRepository: InventoryRepository,
+    private readonly menuCacheService: MenuCacheService,
+  ) {}
 
   async refillInventory(dto: RefillInventoryDto): Promise<Inventory> {
     const inventory = await this.inventoryRepository.findByTheatreAndMenuItem(
@@ -33,7 +37,9 @@ export class RefillService {
     inventory.quantity = dto.quantity;
 
     try {
-      return await this.inventoryRepository.save(inventory);
+      const saved = await this.inventoryRepository.save(inventory);
+      await this.menuCacheService.invalidate(dto.theatreId);
+      return saved;
     } catch (error) {
       if (error instanceof OptimisticLockVersionMismatchError) {
         throw new ConflictException(

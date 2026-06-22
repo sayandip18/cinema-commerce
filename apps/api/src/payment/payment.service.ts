@@ -1,15 +1,14 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
-import Redis from 'ioredis';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { Order, OrderStatus } from '../order/entities/order.entity';
 import { Inventory } from '../inventory/entities/inventory.entity';
+import { MenuCacheService } from '../menu/menu-cache.service';
 
 @Injectable()
 export class PaymentService {
@@ -17,7 +16,7 @@ export class PaymentService {
 
   constructor(
     private readonly dataSource: DataSource,
-    @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    private readonly menuCacheService: MenuCacheService,
   ) {}
 
   async initiatePayment(
@@ -77,6 +76,8 @@ export class PaymentService {
     orderId: string,
     result: { success: boolean; transactionId?: string },
   ): Promise<void> {
+    let theatreId: string | null = null;
+
     await this.dataSource.transaction(async (manager) => {
       const order = await manager.findOne(Order, {
         where: { id: orderId },
@@ -89,19 +90,20 @@ export class PaymentService {
       });
 
       if (!order || !payment) return;
+      theatreId = order.theatreId;
 
+      // happy path
       if (order.status === OrderStatus.PENDING_PAYMENT) {
         if (result.success) {
           payment.status = PaymentStatus.SUCCESS;
           payment.transactionRef = result.transactionId ?? null;
           order.status = OrderStatus.PLACED;
-          await this.redis.del(`reservation:${orderId}`);
         } else {
           payment.status = PaymentStatus.FAILED;
           order.status = OrderStatus.CANCELLED;
           await this.restoreStock(manager, order);
-          await this.redis.del(`reservation:${orderId}`);
         }
+        // cron expired the order due to timeout
       } else if (order.status === OrderStatus.CANCELLED_DUE_TO_TIMEOUT) {
         if (result.success) {
           const reacquired = await this.tryReacquireStock(manager, order);
@@ -132,6 +134,10 @@ export class PaymentService {
       await manager.save(Order, order);
       await manager.save(Payment, payment);
     });
+
+    if (theatreId) {
+      await this.menuCacheService.invalidate(theatreId);
+    }
   }
 
   private async restoreStock(
@@ -205,9 +211,9 @@ export class PaymentService {
     const delay = simulateDelay ?? Math.random() * 800 + 400;
     await new Promise((resolve) => setTimeout(resolve, delay));
 
-    if (Math.random() < 0.05) {
-      throw new Error('PAYMENT_FAILED');
-    }
+    // if (Math.random() < 0.05) {
+    //   throw new Error('PAYMENT_FAILED');
+    // }
 
     return {
       transactionId: `txn_${Math.random().toString(36).substring(2, 11)}`,

@@ -1,20 +1,18 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import Redis from 'ioredis';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderRepository } from './order.repository';
 import { InventoryRepository } from '../inventory/inventory.repository';
 import { MenuRepository } from '../menu/menu.repository';
+import { MenuCacheService } from '../menu/menu-cache.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 const TAX_RATE = 0.05;
-const RESERVATION_TTL_SECONDS = 420; // 7 minutes
 
 @Injectable()
 export class OrderService {
@@ -22,8 +20,8 @@ export class OrderService {
     private readonly orderRepository: OrderRepository,
     private readonly inventoryRepository: InventoryRepository,
     private readonly menuRepository: MenuRepository,
+    private readonly menuCacheService: MenuCacheService,
     private readonly dataSource: DataSource,
-    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
 
   async placeOrder(userId: string, dto: CreateOrderDto): Promise<Order> {
@@ -37,7 +35,7 @@ export class OrderService {
       }
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       let foodCost = 0;
       const orderItems: OrderItem[] = [];
 
@@ -90,21 +88,12 @@ export class OrderService {
 
       const saved = await this.orderRepository.saveWithManager(manager, order);
 
-      const reservationData = JSON.stringify(
-        dto.items.map((i) => ({
-          menuItemId: i.menuItemId,
-          quantity: i.quantity,
-        })),
-      );
-      await this.redis.set(
-        `reservation:${saved.id}`,
-        reservationData,
-        'EX',
-        RESERVATION_TTL_SECONDS,
-      );
-
       return saved;
     });
+
+    await this.menuCacheService.invalidate(dto.theatreId);
+
+    return result;
   }
 
   async getOrderById(userId: string, orderId: string): Promise<Order> {

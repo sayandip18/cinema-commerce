@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { MenuRepository } from './menu.repository';
 import { InventoryRepository } from '../inventory/inventory.repository';
+import { MenuCacheService } from './menu-cache.service';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -18,9 +19,21 @@ export class MenuService {
   constructor(
     private readonly menuRepository: MenuRepository,
     private readonly inventoryRepository: InventoryRepository,
+    private readonly menuCacheService: MenuCacheService,
   ) {}
 
   async getAvailableItems(theatreId: string): Promise<AvailableMenuItem[]> {
+    const cached = await this.menuCacheService.get(theatreId);
+    if (cached) return cached;
+
+    const items = await this.loadAvailableItems(theatreId);
+    await this.menuCacheService.set(theatreId, items);
+    return items;
+  }
+
+  private async loadAvailableItems(
+    theatreId: string,
+  ): Promise<AvailableMenuItem[]> {
     const inventoryItems =
       await this.inventoryRepository.findInStockByTheatre(theatreId);
 
