@@ -175,7 +175,16 @@ pnpm seed
 
 This inserts 5 theatres, 7 movies, and 12 showtimes. The script is idempotent — it skips seeding if data already exists.
 
-### 4. Start the Patron app
+### 4. Start the Admin dashboard
+
+```bash
+cd apps/admin
+pnpm dev
+```
+
+Opens at http://localhost:5173.
+
+### 5. Start the Patron app
 
 ```bash
 cd apps/patron

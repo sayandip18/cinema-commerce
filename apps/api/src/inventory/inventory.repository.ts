@@ -42,7 +42,19 @@ export class InventoryRepository {
       .getMany();
   }
 
+  async findAllByTheatre(theatreId: string): Promise<Inventory[]> {
+    return this.repository.find({
+      where: { theatreId },
+      relations: { menuItem: true },
+    });
+  }
+
   async save(inventory: Inventory): Promise<Inventory> {
+    return this.repository.save(inventory);
+  }
+
+  async create(partial: Partial<Inventory>): Promise<Inventory> {
+    const inventory = this.repository.create(partial);
     return this.repository.save(inventory);
   }
 

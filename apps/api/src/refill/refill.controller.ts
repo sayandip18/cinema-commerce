@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { RefillService } from './refill.service';
 import { RefillInventoryDto } from './dto/refill-inventory.dto';
+import { BulkRefillInventoryDto } from './dto/bulk-refill-inventory.dto';
 
 @Controller('admin/inventory')
 export class RefillController {
@@ -17,6 +18,20 @@ export class RefillController {
   async refillInventory(@Body() dto: RefillInventoryDto) {
     const inventory = await this.refillService.refillInventory(dto);
     return { data: inventory };
+  }
+
+  @Put('bulk')
+  async bulkRefillInventory(@Body() dto: BulkRefillInventoryDto) {
+    const overview = await this.refillService.bulkRefillInventory(dto);
+    return { data: overview };
+  }
+
+  @Get('overview/:theatreId')
+  async getInventoryOverview(
+    @Param('theatreId', ParseUUIDPipe) theatreId: string,
+  ) {
+    const overview = await this.refillService.getInventoryOverview(theatreId);
+    return { data: overview };
   }
 
   @Get(':theatreId')
