@@ -1,0 +1,9 @@
+{
+  "name": "popcorn-meltdown-2500",
+  "menuItemName": "Classic Popcorn",
+  "initialStock": 200,
+  "simulatedPatrons": 2500,
+  "concurrency": 512,
+  "quantityPerOrder": 1,
+  "seatPrefix": "A"
+}

@@ -192,3 +192,111 @@ pnpm start
 ```
 
 Press `w` for web, `a` for Android, or `i` for iOS.
+
+### 6. Run the Digital Twin
+
+The digital twin is a standalone Node.js CLI that hammers the running API over HTTP, simulating a burst of cinema patrons ordering concessions. It signs up virtual users, refills inventory to a known level, fires concurrent orders + payments, and prints a latency/correctness readout.
+
+#### Prerequisites
+
+The API, Postgres, and Redis must be running (steps 1–3 above). The database must be seeded.
+
+#### Install dependencies
+
+```bash
+cd apps/digital-twin
+pnpm install
+```
+
+#### Run a scenario
+
+```bash
+cd apps/digital-twin
+npx tsx twin.ts --scenario scenarios/popcorn-meltdown.json
+npx tsx twin.ts --scenario scenarios/popcorn-meltdown-2500.json
+```
+
+To target a different API host:
+
+```bash
+npx tsx twin.ts --scenario scenarios/popcorn-meltdown.json --base-url http://localhost:3000
+```
+
+#### Scenario file format
+
+Scenarios are JSON files in `apps/digital-twin/scenarios/`. Two modes are supported:
+
+**Discover mode** — the twin auto-discovers IDs by querying the API:
+
+```json
+{
+  "name": "popcorn-meltdown",
+  "menuItemName": "Classic Popcorn",
+  "initialStock": 200,
+  "simulatedPatrons": 500,
+  "concurrency": 128,
+  "quantityPerOrder": 1,
+  "seatPrefix": "A"
+}
+```
+
+**Explicit mode** — provide UUIDs directly (skip discovery):
+
+```json
+{
+  "name": "popcorn-meltdown",
+  "theatreId": "<uuid>",
+  "showtimeId": "<uuid>",
+  "screenNumber": "3",
+  "menuItemId": "<uuid>",
+  "initialStock": 200,
+  "simulatedPatrons": 2500,
+  "concurrency": 512,
+  "quantityPerOrder": 1,
+  "seatPrefix": "A"
+}
+```
+
+| Field              | Required | Description                                                             |
+| ------------------ | -------- | ----------------------------------------------------------------------- |
+| `name`             | Yes      | Scenario label shown in the report                                      |
+| `theatreId`        | No       | Theatre UUID (discovered from `GET /theatres` if omitted)               |
+| `showtimeId`       | No       | Showtime UUID (discovered from theatre showtimes if omitted)            |
+| `screenNumber`     | No       | Screen number (discovered with showtime if omitted)                     |
+| `menuItemId`       | No       | Menu item UUID (discovered from theatre menu if omitted)                |
+| `menuItemName`     | No       | Substring match to find menu item in discover mode                      |
+| `initialStock`     | Yes      | Stock level set before the burst via the admin refill API               |
+| `simulatedPatrons` | Yes      | Total virtual users that will place orders                              |
+| `concurrency`      | Yes      | Max in-flight requests during the burst                                 |
+| `quantityPerOrder` | Yes      | Units of the menu item per order                                        |
+| `seatPrefix`       | No       | Seat label prefix (default: `A`); seats generated as `A-1`, `A-2`, etc. |
+
+#### Sample output
+
+```
+════════════════════════════════════════════════════════════════
+SCENARIO: popcorn-meltdown  (stock=200, patrons=500)
+════════════════════════════════════════════════════════════════
+  theatre                PVR INOX Nexus
+  menu item              Classic Popcorn
+  burst duration         4.21 s
+  peak arrival rate      312 req/s   @ t=1s
+────────────────────────────────────────────────────────────────
+  orders attempted       500
+  confirmed sold         200
+  rejected (sold out)    300   ✓ correct degradation
+  errors (5xx/timeout)   0
+  OVERSELL               0   ✓
+────────────────────────────────────────────────────────────────
+  p50 order latency      45 ms
+  p95 order latency      340 ms
+  p99 order latency      910 ms
+  p95 total (ord+pay)    520 ms
+  p99 total (ord+pay)    1100 ms
+  max in-flight          128
+  stock-sync lag         1.2 s
+  final stock            0
+════════════════════════════════════════════════════════════════
+```
+
+The process exits with code `0` if no oversell is detected, or `1` if oversell occurred.

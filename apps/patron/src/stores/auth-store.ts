@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { tokenStorage } from '@/lib/token-storage';
 import { authApi, type UserData, type AgeGroup, type Gender } from '@/lib/auth-api';
+import { queryClient } from '@/lib/query-client';
 
 type AuthStep =
   | 'idle'
@@ -125,6 +126,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Proceed with local logout even if backend call fails
     }
     await tokenStorage.clearTokens();
+    queryClient.clear();
     set({
       user: null,
       step: 'idle',
