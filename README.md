@@ -113,9 +113,6 @@ The Digital Twin generates synthetic demand and drives actual backend APIs to me
 
 #### Traffic Simulation
 
-- Virtual customers
-- Audience profiles
-- Showtime schedules
 - Intermission traffic spikes
 
 #### System Validation
@@ -193,7 +190,15 @@ pnpm start
 
 Press `w` for web, `a` for Android, or `i` for iOS.
 
-### 6. Run the Digital Twin
+### 6. To run the app all at once
+
+```bash
+pnpm dev
+```
+
+Mobile web app runs at http://localhost:8081, admin app at http://localhost:5173
+
+### 7. Run the Digital Twin
 
 The digital twin is a standalone Node.js CLI that hammers the running API over HTTP, simulating a burst of cinema patrons ordering concessions. It signs up virtual users, refills inventory to a known level, fires concurrent orders + payments, and prints a latency/correctness readout.
 
