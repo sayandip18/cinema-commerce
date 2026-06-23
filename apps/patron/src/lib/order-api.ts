@@ -13,6 +13,17 @@ interface PlaceOrderRequest {
   idempotencyKey?: string;
 }
 
+export interface OrderItemResponse {
+  id: string;
+  menuItemId: string;
+  quantity: number;
+  priceAtPurchase: number;
+  menuItem: {
+    id: string;
+    name: string;
+  };
+}
+
 export interface OrderResponse {
   id: string;
   userId: string;
@@ -23,6 +34,7 @@ export interface OrderResponse {
   taxes: number;
   total: number;
   status: string;
+  items: OrderItemResponse[];
   createdAt: string;
 }
 
@@ -48,6 +60,11 @@ export const orderApi = {
 
   getOrder: async (orderId: string): Promise<OrderResponse> => {
     const { data } = await apiClient.get(`/orders/${orderId}`);
+    return data.data;
+  },
+
+  getMyOrders: async (): Promise<OrderResponse[]> => {
+    const { data } = await apiClient.get('/orders');
     return data.data;
   },
 };

@@ -13,9 +13,9 @@ function CartButton() {
   return (
     <Pressable
       onPress={() => router.push('/cart')}
-      style={({ pressed }) => [styles.cartButton, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [styles.topBarButton, pressed && { opacity: 0.7 }]}
     >
-      <ThemedText style={styles.cartIcon}>&#x1F6D2;</ThemedText>
+      <ThemedText style={styles.topBarIcon}>&#x1F6D2;</ThemedText>
       {totalItems > 0 && (
         <View style={styles.badge}>
           <ThemedText style={styles.badgeText}>{totalItems}</ThemedText>
@@ -39,7 +39,14 @@ export default function AppTabs() {
         indicatorColor={colors.backgroundElement}
         labelStyle={{ selected: { color: colors.text } }}>
         <NativeTabs.Trigger name="index">
-          <NativeTabs.Trigger.Label>Order</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Label>Menu</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon
+            src={require('@/assets/images/tabIcons/home.png')}
+            renderingMode="template"
+          />
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="order">
+          <NativeTabs.Trigger.Label>Orders</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             src={require('@/assets/images/tabIcons/home.png')}
             renderingMode="template"
@@ -62,11 +69,11 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingBottom: Spacing.one,
   },
-  cartButton: {
+  topBarButton: {
     position: 'relative',
     padding: Spacing.two,
   },
-  cartIcon: {
+  topBarIcon: {
     fontSize: 22,
   },
   badge: {

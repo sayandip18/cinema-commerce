@@ -21,7 +21,10 @@ export default function AppTabs() {
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="index" href="/" asChild>
-            <TabButton>Order</TabButton>
+            <TabButton>Menu</TabButton>
+          </TabTrigger>
+          <TabTrigger name="order" href="/order" asChild>
+            <TabButton>Orders</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>

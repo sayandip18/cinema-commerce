@@ -125,7 +125,7 @@ export default function CartScreen() {
       if (finalStatus === "placed") {
         clearCart();
         Alert.alert("Order Placed", "Your order has been confirmed!");
-        router.back();
+        router.replace("/(tabs)");
       } else if (finalStatus === "cancelled") {
         Alert.alert(
           "Payment Failed",

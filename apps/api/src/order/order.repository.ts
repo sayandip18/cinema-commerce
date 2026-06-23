@@ -13,14 +13,14 @@ export class OrderRepository {
   async findById(id: string): Promise<Order | null> {
     return this.repository.findOne({
       where: { id },
-      relations: { items: true },
+      relations: { items: { menuItem: true } },
     });
   }
 
   async findByUserId(userId: string): Promise<Order[]> {
     return this.repository.find({
       where: { userId },
-      relations: { items: true },
+      relations: { items: { menuItem: true } },
       order: { createdAt: 'DESC' },
     });
   }

@@ -44,31 +44,37 @@ export class PaymentService {
     payment.status = PaymentStatus.PENDING;
     const saved = await this.dataSource.getRepository(Payment).save(payment);
 
-    this.processGatewayAsync(saved.id, orderId, simulateDelay);
+    void this.processGatewayAsync(saved.id, orderId, simulateDelay);
 
     return saved;
   }
 
-  private processGatewayAsync(
+  private async processGatewayAsync(
     paymentId: string,
     orderId: string,
     simulateDelay?: number,
-  ): void {
-    this.mockPaymentGateway(simulateDelay)
-      .then((result) =>
-        this.handlePaymentResult(paymentId, orderId, {
-          success: true,
-          transactionId: result.transactionId,
-        }),
-      )
-      .catch(() =>
-        this.handlePaymentResult(paymentId, orderId, { success: false }),
-      )
-      .catch((error) =>
-        this.logger.error(
-          `Failed to handle payment result for order ${orderId}: ${error}`,
-        ),
+  ): Promise<void> {
+    let gatewaySuccess = false;
+    let transactionId: string | undefined;
+
+    try {
+      const result = await this.mockPaymentGateway(simulateDelay);
+      gatewaySuccess = true;
+      transactionId = result.transactionId;
+    } catch {
+      // gateway failed — gatewaySuccess stays false
+    }
+
+    try {
+      await this.handlePaymentResult(paymentId, orderId, {
+        success: gatewaySuccess,
+        transactionId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle payment result for order ${orderId}: ${error}`,
       );
+    }
   }
 
   private async handlePaymentResult(
@@ -82,7 +88,7 @@ export class PaymentService {
       const order = await manager.findOne(Order, {
         where: { id: orderId },
         relations: { items: true },
-        lock: { mode: 'pessimistic_write' },
+        // lock: { mode: 'pessimistic_write' },
       });
 
       const payment = await manager.findOne(Payment, {
