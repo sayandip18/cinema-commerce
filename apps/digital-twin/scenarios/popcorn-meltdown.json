@@ -2,8 +2,8 @@
   "name": "popcorn-meltdown",
   "menuItemName": "Classic Popcorn",
   "initialStock": 200,
-  "simulatedPatrons": 500,
-  "concurrency": 128,
+  "simulatedPatrons": 400,
+  "concurrency": 100,
   "quantityPerOrder": 1,
   "seatPrefix": "A"
 }

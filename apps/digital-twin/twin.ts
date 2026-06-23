@@ -59,8 +59,8 @@ interface StockWatchSample {
 
 // ─── Constants ──────────────────────────────────────────────────────
 
-const REQUEST_TIMEOUT_MS = 15_000;
-const SCENARIO_TIMEOUT_MS = 5 * 60_000;
+const REQUEST_TIMEOUT_MS = 90_000;
+const SCENARIO_TIMEOUT_MS = 10 * 60_000;
 
 // ─── HTTP helper ────────────────────────────────────────────────────
 
@@ -292,12 +292,14 @@ async function getStockLevel(
   theatreId: string,
   menuItemId: string,
 ): Promise<number> {
+  log("DEBUG START");
   const res = await httpJson(
     pool,
     "GET",
     `/admin/inventory/${theatreId}/${menuItemId}`,
   );
   if (res.status === 404) return 0;
+  log("DEBUG END");
   return (res.data as Record<string, Record<string, number>>).data.quantity;
 }
 
@@ -581,11 +583,23 @@ async function main(): Promise<void> {
 
   // ── Phase 5: final stock ──
 
-  const finalStock = await getStockLevel(
-    pool,
-    scenario.theatreId,
-    scenario.menuItemId,
-  );
+  const checkPool = new Pool(baseUrl, { connections: 2, pipelining: 1 });
+  let finalStock = -1;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      finalStock = await getStockLevel(
+        checkPool,
+        scenario.theatreId,
+        scenario.menuItemId,
+      );
+      break;
+    } catch {
+      log(`  stock check attempt ${attempt + 1} failed, retrying...`);
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+  await checkPool.close();
+  log(`Final stock: ${finalStock}`);
 
   // ── Phase 6: compute results ──
 

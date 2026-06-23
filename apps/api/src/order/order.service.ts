@@ -70,21 +70,23 @@ export class OrderService {
           throw new NotFoundException(`Menu item ${item.menuItemId} not found`);
         }
 
-        const inventory =
-          await this.inventoryRepository.findByTheatreAndMenuItemForUpdate(
-            manager,
-            dto.theatreId,
-            item.menuItemId,
-          );
+        const updated = await this.inventoryRepository.decrementQuantity(
+          manager,
+          dto.theatreId,
+          item.menuItemId,
+          item.quantity,
+        );
 
-        if (!inventory || inventory.quantity < item.quantity) {
+        if (!updated) {
+          const inventory =
+            await this.inventoryRepository.findByTheatreAndMenuItem(
+              dto.theatreId,
+              item.menuItemId,
+            );
           throw new BadRequestException(
             `Insufficient stock for "${menuItem.name}". Available: ${inventory?.quantity ?? 0}, requested: ${item.quantity}`,
           );
         }
-
-        inventory.quantity -= item.quantity;
-        await this.inventoryRepository.saveWithManager(manager, inventory);
 
         const lineTotal = Number(menuItem.basePrice) * item.quantity;
         foodCost += lineTotal;

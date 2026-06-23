@@ -73,6 +73,7 @@ import { OutboxEvent } from './outbox/outbox.entity';
           OutboxEvent,
         ],
         synchronize: true,
+        extra: { max: 50 },
       }),
     }),
     TypeOrmModule.forRootAsync({

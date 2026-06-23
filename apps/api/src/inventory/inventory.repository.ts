@@ -21,17 +21,30 @@ export class InventoryRepository {
     return this.repository.findOne({ where: { theatreId, menuItemId } });
   }
 
-  async findByTheatreAndMenuItemForUpdate(
+  async decrementQuantity(
     manager: EntityManager,
     theatreId: string,
     menuItemId: string,
+    amount: number,
   ): Promise<Inventory | null> {
-    return manager
-      .createQueryBuilder(Inventory, 'inventory')
-      .setLock('pessimistic_write')
-      .where('inventory.theatreId = :theatreId', { theatreId })
-      .andWhere('inventory.menuItemId = :menuItemId', { menuItemId })
-      .getOne();
+    const result = await manager
+      .createQueryBuilder()
+      .update(Inventory)
+      .set({ quantity: () => 'quantity - :amount' })
+      .where('theatreId = :theatreId', { theatreId })
+      .andWhere('menuItemId = :menuItemId', { menuItemId })
+      .andWhere('quantity >= :amount', { amount })
+      .returning('*')
+      .execute();
+
+    if (result.affected === 0) {
+      return null;
+    }
+
+    return manager.create(
+      Inventory,
+      (result.raw as Record<string, unknown>[])[0],
+    );
   }
 
   async findInStockByTheatre(theatreId: string): Promise<Inventory[]> {
@@ -56,12 +69,5 @@ export class InventoryRepository {
   async create(partial: Partial<Inventory>): Promise<Inventory> {
     const inventory = this.repository.create(partial);
     return this.repository.save(inventory);
-  }
-
-  async saveWithManager(
-    manager: EntityManager,
-    inventory: Inventory,
-  ): Promise<Inventory> {
-    return manager.save(Inventory, inventory);
   }
 }

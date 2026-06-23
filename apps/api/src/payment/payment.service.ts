@@ -151,21 +151,14 @@ export class PaymentService {
     order: Order,
   ): Promise<void> {
     for (const item of order.items) {
-      const inventory = await manager
-        .createQueryBuilder(Inventory, 'inventory')
-        .setLock('pessimistic_write')
-        .where('inventory.theatreId = :theatreId', {
-          theatreId: order.theatreId,
-        })
-        .andWhere('inventory.menuItemId = :menuItemId', {
-          menuItemId: item.menuItemId,
-        })
-        .getOne();
-
-      if (inventory) {
-        inventory.quantity += item.quantity;
-        await manager.save(Inventory, inventory);
-      }
+      await manager
+        .createQueryBuilder()
+        .update(Inventory)
+        .set({ quantity: () => 'quantity + :amount' })
+        .where('theatreId = :theatreId', { theatreId: order.theatreId })
+        .andWhere('menuItemId = :menuItemId', { menuItemId: item.menuItemId })
+        .setParameter('amount', item.quantity)
+        .execute();
     }
   }
 

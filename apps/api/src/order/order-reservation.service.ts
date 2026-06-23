@@ -40,37 +40,45 @@ export class OrderReservationService {
   }
 
   async cancelAndRestoreStock(order: Order): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
-      const locked = await manager.findOne(Order, {
-        where: { id: order.id },
-        lock: { mode: 'pessimistic_write' },
-      });
+    const claimed = await this.dataSource.transaction(async (manager) => {
+      // Atomic compare-and-swap: claim the cancellation. Only one writer can
+      // transition the order out of PENDING_PAYMENT, which guards against
+      // restoring stock twice (e.g. a concurrent cron tick or a late payment).
+      const result = await manager
+        .createQueryBuilder()
+        .update(Order)
+        .set({ status: OrderStatus.CANCELLED_DUE_TO_TIMEOUT })
+        .where('id = :id', { id: order.id })
+        .andWhere('status = :status', {
+          status: OrderStatus.PENDING_PAYMENT,
+        })
+        .execute();
 
-      if (!locked || locked.status !== OrderStatus.PENDING_PAYMENT) {
-        return;
+      // Lost the race — someone else already transitioned the order.
+      if (!result.affected) {
+        return false;
       }
 
+      // We own the cancellation, so restore stock with atomic increments.
       for (const item of order.items) {
-        const inventory = await manager
-          .createQueryBuilder(Inventory, 'inventory')
-          .setLock('pessimistic_write')
-          .where('inventory.theatreId = :theatreId', {
-            theatreId: order.theatreId,
-          })
-          .andWhere('inventory.menuItemId = :menuItemId', {
+        await manager
+          .createQueryBuilder()
+          .update(Inventory)
+          .set({ quantity: () => 'quantity + :amount' })
+          .where('theatreId = :theatreId', { theatreId: order.theatreId })
+          .andWhere('menuItemId = :menuItemId', {
             menuItemId: item.menuItemId,
           })
-          .getOne();
-
-        if (inventory) {
-          inventory.quantity += item.quantity;
-          await manager.save(Inventory, inventory);
-        }
+          .setParameter('amount', item.quantity)
+          .execute();
       }
 
-      locked.status = OrderStatus.CANCELLED_DUE_TO_TIMEOUT;
-      await manager.save(Order, locked);
+      return true;
     });
+
+    if (!claimed) {
+      return;
+    }
 
     this.logger.log(`Order ${order.id} cancelled due to payment timeout`);
     await this.menuCacheService.invalidate(order.theatreId);
