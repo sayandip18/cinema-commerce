@@ -7,6 +7,7 @@ interface OrderItemInput {
 
 interface PlaceOrderRequest {
   theatreId: string;
+  showtimeId: string;
   screenNumber: string;
   seatNumber: string;
   items: OrderItemInput[];

@@ -23,14 +23,14 @@ export class Showtime {
 
   @ManyToOne(() => Theatre)
   @JoinColumn({ name: 'theatreId' })
-  theatre: Theatre;
+  theatre!: Theatre;
 
   @Column({ type: 'uuid' })
   movieId: string;
 
   @ManyToOne(() => Movie)
   @JoinColumn({ name: 'movieId' })
-  movie: Movie;
+  movie!: Movie;
 
   @Column({ length: 50 })
   screen: string;

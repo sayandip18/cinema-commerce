@@ -106,6 +106,7 @@ export default function CartScreen() {
     try {
       const order = await orderApi.placeOrder({
         theatreId: selectedTheatre.id,
+        showtimeId: selectedShowtime.showtimeId,
         screenNumber: selectedShowtime.screen,
         seatNumber: "A1",
         items: items.map((i) => ({
