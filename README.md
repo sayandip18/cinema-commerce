@@ -23,11 +23,6 @@ Customer-facing mobile web application used by moviegoers to order food and beve
 - Cinema patrons
 - Moviegoers
 
-### Integrations
-
-- NestJS API
-- WebSocket Gateway
-
 ---
 
 ## 2. Admin App (`apps/admin`)
@@ -49,10 +44,6 @@ Operational dashboard used by cinema staff and managers to manage inventory, ord
 - Cinema staff
 - Operations managers
 - Administrators
-
-### Integrations
-
-- NestJS API
 
 ---
 
@@ -87,17 +78,6 @@ Central backend responsible for business logic, inventory consistency, order pro
 - Event consumption
 - Metric aggregation
 - Reporting APIs
-
-#### Real-Time Domain
-
-- Stock update broadcasting
-- Order status updates
-
-### Integrations
-
-- PostgreSQL
-- Redis
-- WebSocket Gateway
 
 ---
 
