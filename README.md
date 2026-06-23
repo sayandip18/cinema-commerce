@@ -275,32 +275,10 @@ Scenarios are JSON files in `apps/digital-twin/scenarios/`. Two modes are suppor
 | `quantityPerOrder` | Yes      | Units of the menu item per order                                        |
 | `seatPrefix`       | No       | Seat label prefix (default: `A`); seats generated as `A-1`, `A-2`, etc. |
 
-#### Sample output
-
-```
-════════════════════════════════════════════════════════════════
-SCENARIO: popcorn-meltdown  (stock=200, patrons=500)
-════════════════════════════════════════════════════════════════
-  theatre                PVR INOX Nexus
-  menu item              Classic Popcorn
-  burst duration         4.21 s
-  peak arrival rate      312 req/s   @ t=1s
-────────────────────────────────────────────────────────────────
-  orders attempted       500
-  confirmed sold         200
-  rejected (sold out)    300   ✓ correct degradation
-  errors (5xx/timeout)   0
-  OVERSELL               0   ✓
-────────────────────────────────────────────────────────────────
-  p50 order latency      45 ms
-  p95 order latency      340 ms
-  p99 order latency      910 ms
-  p95 total (ord+pay)    520 ms
-  p99 total (ord+pay)    1100 ms
-  max in-flight          128
-  stock-sync lag         1.2 s
-  final stock            0
-════════════════════════════════════════════════════════════════
-```
-
 The process exits with code `0` if no oversell is detected, or `1` if oversell occurred.
+
+## Run tests
+
+```bash
+cd apps/api && npx jest order.service.spec payment.service.spec
+```
