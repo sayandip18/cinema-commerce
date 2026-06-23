@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { AnalyticsStreamWorker } from './analytics-stream.worker';
+import { AnalyticsController } from './analytics.controller';
+import { AnalyticsService } from './analytics.service';
 import { DimShowtime } from './entities/dim-showtime.entity';
 import { DimPatron } from './entities/dim-patron.entity';
 import { DimMenuItem } from './entities/dim-menu-item.entity';
@@ -17,6 +19,7 @@ import { analyticsRedisConfig } from '../config/analytics-redis.config';
       'analytics',
     ),
   ],
-  providers: [AnalyticsStreamWorker],
+  controllers: [AnalyticsController],
+  providers: [AnalyticsStreamWorker, AnalyticsService],
 })
 export class AnalyticsModule {}

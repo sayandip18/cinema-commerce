@@ -44,3 +44,29 @@ export async function bulkRefillInventory(
   );
   return response.data.data;
 }
+
+export interface DemographicRow {
+  ageGroup: string;
+  category: string;
+  totalQuantity: number;
+  totalSpent: number;
+}
+
+export interface DemographicsSummary {
+  totalOrders: number;
+  totalRevenue: number;
+  topCategory: string;
+  topAgeGroup: string;
+}
+
+export interface DemographicsData {
+  breakdown: DemographicRow[];
+  summary: DemographicsSummary;
+}
+
+export async function fetchDemographics(): Promise<DemographicsData> {
+  const response = await api.get<{ data: DemographicsData }>(
+    '/analytics/demographics',
+  );
+  return response.data.data;
+}
