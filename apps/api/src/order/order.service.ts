@@ -8,7 +8,9 @@ import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderRepository } from './order.repository';
 import { InventoryRepository } from '../inventory/inventory.repository';
+import { Inventory } from '../inventory/entities/inventory.entity';
 import { MenuRepository } from '../menu/menu.repository';
+import { MenuItem } from '../menu/entities/menu-item.entity';
 import { MenuCacheService } from '../menu/menu-cache.service';
 import { UserRepository } from '../user/user.repository';
 import { ShowtimeService } from '../showtime/showtime.service';
@@ -59,16 +61,26 @@ export class OrderService {
       );
     }
 
+    // NOTE: Resolve menu items before opening the transaction. These are read-only
+    // reference lookups; fetching them inside the transaction would check out a
+    // second pool connection while the first is held, which deadlocks the pool
+    // under burst load and needlessly extends the inventory row lock.
+    const menuItems = new Map<string, MenuItem>();
+    for (const item of dto.items) {
+      const menuItem = await this.menuRepository.findById(item.menuItemId);
+      if (!menuItem) {
+        throw new NotFoundException(`Menu item ${item.menuItemId} not found`);
+      }
+      menuItems.set(item.menuItemId, menuItem);
+    }
+
     const result = await this.dataSource.transaction(async (manager) => {
       let foodCost = 0;
       const orderItems: OrderItem[] = [];
       const itemSnapshots: Record<string, unknown>[] = [];
 
       for (const item of dto.items) {
-        const menuItem = await this.menuRepository.findById(item.menuItemId);
-        if (!menuItem) {
-          throw new NotFoundException(`Menu item ${item.menuItemId} not found`);
-        }
+        const menuItem = menuItems.get(item.menuItemId)!;
 
         const updated = await this.inventoryRepository.decrementQuantity(
           manager,
@@ -78,11 +90,9 @@ export class OrderService {
         );
 
         if (!updated) {
-          const inventory =
-            await this.inventoryRepository.findByTheatreAndMenuItem(
-              dto.theatreId,
-              item.menuItemId,
-            );
+          const inventory = await manager.findOne(Inventory, {
+            where: { theatreId: dto.theatreId, menuItemId: item.menuItemId },
+          });
           throw new BadRequestException(
             `Insufficient stock for "${menuItem.name}". Available: ${inventory?.quantity ?? 0}, requested: ${item.quantity}`,
           );
