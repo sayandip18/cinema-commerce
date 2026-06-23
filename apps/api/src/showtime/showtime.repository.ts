@@ -18,6 +18,14 @@ export class ShowtimeRepository {
     });
   }
 
+  async findByTheatreId(theatreId: string): Promise<Showtime[]> {
+    return this.repository.find({
+      where: { theatreId },
+      relations: { movie: true },
+      order: { startTime: 'ASC' },
+    });
+  }
+
   async findByIdWithMovie(id: string): Promise<Showtime | null> {
     return this.repository.findOne({
       where: { id },

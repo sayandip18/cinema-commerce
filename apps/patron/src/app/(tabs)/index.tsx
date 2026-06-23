@@ -14,9 +14,271 @@ import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/stores/auth-store";
 import { useCartStore } from "@/stores/cart-store";
+import { useSessionStore } from "@/stores/session-store";
 import { BottomTabInset, MaxContentWidth, Spacing } from "@/constants/theme";
-import { showtimeApi } from "@/lib/showtime-api";
 import { menuApi, type MenuItem } from "@/lib/menu-api";
+import {
+  theatreApi,
+  type Theatre,
+  type TheatreShowtime,
+} from "@/lib/theatre-api";
+
+function TheatreList() {
+  const theme = useTheme();
+  const selectTheatre = useSessionStore((s) => s.selectTheatre);
+
+  const { data: theatres, isLoading, error } = useQuery({
+    queryKey: ["theatres"],
+    queryFn: theatreApi.getAll,
+  });
+
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={theme.textSecondary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <ThemedText themeColor="textSecondary">
+          Failed to load theatres. Please try again.
+        </ThemedText>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={theatres}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <TheatreCard theatre={item} onSelect={selectTheatre} />
+      )}
+      contentContainerStyle={styles.listContent}
+      showsVerticalScrollIndicator={false}
+      style={styles.list}
+    />
+  );
+}
+
+function TheatreCard({
+  theatre,
+  onSelect,
+}: {
+  theatre: Theatre;
+  onSelect: (t: Theatre) => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      onPress={() => onSelect(theatre)}
+      style={({ pressed }) => [
+        styles.theatreCard,
+        { backgroundColor: theme.backgroundElement },
+        pressed && styles.pressed,
+      ]}
+    >
+      <ThemedText style={styles.theatreName}>{theatre.name}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">
+        {theatre.location}
+      </ThemedText>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.screens}>
+        {theatre.totalScreens} screens
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+function ShowtimeList() {
+  const theme = useTheme();
+  const selectedTheatre = useSessionStore((s) => s.selectedTheatre);
+  const selectShowtime = useSessionStore((s) => s.selectShowtime);
+  const goBackToTheatres = useSessionStore((s) => s.goBackToTheatres);
+
+  const { data: showtimes, isLoading, error } = useQuery({
+    queryKey: ["showtimes", selectedTheatre!.id],
+    queryFn: () => theatreApi.getShowtimes(selectedTheatre!.id),
+  });
+
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={theme.textSecondary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <ThemedText themeColor="textSecondary">
+          Failed to load showtimes. Please try again.
+        </ThemedText>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.list}>
+      <View style={styles.stepHeader}>
+        <Pressable
+          onPress={goBackToTheatres}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+        >
+          <ThemedText style={styles.backText}>&#x2190; Theatres</ThemedText>
+        </Pressable>
+        <ThemedText style={styles.stepTitle}>{selectedTheatre!.name}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {selectedTheatre!.location}
+        </ThemedText>
+      </View>
+
+      {showtimes && showtimes.length === 0 && (
+        <View style={styles.centered}>
+          <ThemedText themeColor="textSecondary">
+            No showtimes available for this theatre.
+          </ThemedText>
+        </View>
+      )}
+
+      <FlatList
+        data={showtimes}
+        keyExtractor={(item) => item.showtimeId}
+        renderItem={({ item }) => (
+          <ShowtimeCard showtime={item} onSelect={selectShowtime} />
+        )}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
+  );
+}
+
+function ShowtimeCard({
+  showtime,
+  onSelect,
+}: {
+  showtime: TheatreShowtime;
+  onSelect: (s: TheatreShowtime) => void;
+}) {
+  const theme = useTheme();
+  const startDate = new Date(showtime.startTime);
+  const timeStr = startDate.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const dateStr = startDate.toLocaleDateString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+
+  return (
+    <Pressable
+      onPress={() => onSelect(showtime)}
+      style={({ pressed }) => [
+        styles.showtimeCard,
+        { backgroundColor: theme.backgroundElement },
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={styles.showtimeMain}>
+        <ThemedText style={styles.movieTitle}>{showtime.movieTitle}</ThemedText>
+        <View style={styles.movieMeta}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {showtime.movieGenre}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {showtime.movieDurationMinutes} min
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {showtime.movieRating}
+          </ThemedText>
+        </View>
+      </View>
+      <View style={styles.showtimeDetails}>
+        <ThemedText style={styles.showtimeTime}>{timeStr}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {dateStr}
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Screen {showtime.screen}
+        </ThemedText>
+        <ThemedText style={styles.showtimePrice}>
+          Rs {Number(showtime.price).toFixed(2)}
+        </ThemedText>
+      </View>
+    </Pressable>
+  );
+}
+
+function MenuView() {
+  const theme = useTheme();
+  const selectedTheatre = useSessionStore((s) => s.selectedTheatre);
+  const selectedShowtime = useSessionStore((s) => s.selectedShowtime);
+  const goBackToShowtimes = useSessionStore((s) => s.goBackToShowtimes);
+
+  const { data: menuItems, isLoading, error } = useQuery({
+    queryKey: ["menu", selectedTheatre!.id],
+    queryFn: () => menuApi.getAvailableItems(selectedTheatre!.id),
+    enabled: !!selectedTheatre,
+  });
+
+  const contextLabel = `${selectedTheatre!.name} | Screen ${selectedShowtime!.screen} | ${selectedShowtime!.movieTitle}`;
+
+  return (
+    <View style={styles.list}>
+      <View style={styles.stepHeader}>
+        <Pressable
+          onPress={goBackToShowtimes}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+        >
+          <ThemedText style={styles.backText}>&#x2190; Showtimes</ThemedText>
+        </Pressable>
+      </View>
+
+      <View
+        style={[styles.contextBar, { backgroundColor: theme.backgroundElement }]}
+      >
+        <ThemedText type="small" numberOfLines={1} style={styles.contextText}>
+          {contextLabel}
+        </ThemedText>
+      </View>
+
+      {isLoading && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={theme.textSecondary} />
+        </View>
+      )}
+
+      {error && (
+        <View style={styles.centered}>
+          <ThemedText themeColor="textSecondary">
+            Failed to load menu. Please try again.
+          </ThemedText>
+        </View>
+      )}
+
+      {menuItems && (
+        <FlatList
+          data={menuItems}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <MenuItemCard item={item} />}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={styles.grid}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      <CartSummary />
+    </View>
+  );
+}
 
 function MenuItemCard({ item }: { item: MenuItem }) {
   const theme = useTheme();
@@ -139,32 +401,17 @@ function CartSummary() {
 export default function HomeScreen() {
   const theme = useTheme();
   const { user, step, logout } = useAuthStore();
+  const selectedTheatre = useSessionStore((s) => s.selectedTheatre);
+  const selectedShowtime = useSessionStore((s) => s.selectedShowtime);
 
-  const {
-    data: showtime,
-    isLoading: showtimeLoading,
-    error: showtimeError,
-  } = useQuery({
-    queryKey: ["currentShowtime"],
-    queryFn: showtimeApi.getCurrent,
-  });
-
-  const {
-    data: menuItems,
-    isLoading: menuLoading,
-    error: menuError,
-  } = useQuery({
-    queryKey: ["menu", showtime?.theatreId],
-    queryFn: () => menuApi.getAvailableItems(showtime!.theatreId),
-    enabled: !!showtime?.theatreId,
-  });
-
-  const isLoading = showtimeLoading || menuLoading;
-  const error = showtimeError || menuError;
-
-  const contextLabel = showtime
-    ? `${showtime.theatreName} | Screen ${showtime.screen} | ${showtime.movieTitle} | Seat ${showtime.seatNumber}`
-    : "";
+  let content: React.ReactNode;
+  if (!selectedTheatre) {
+    content = <TheatreList />;
+  } else if (!selectedShowtime) {
+    content = <ShowtimeList />;
+  } else {
+    content = <MenuView />;
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -210,51 +457,13 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {showtime && (
-          <View
-            style={[
-              styles.contextBar,
-              { backgroundColor: theme.backgroundElement },
-            ]}
-          >
-            <ThemedText
-              type="small"
-              numberOfLines={1}
-              style={styles.contextText}
-            >
-              {contextLabel}
-            </ThemedText>
+        {!selectedTheatre && (
+          <View style={styles.sectionHeader}>
+            <ThemedText style={styles.sectionTitle}>Select a Theatre</ThemedText>
           </View>
         )}
 
-        {isLoading && (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color={theme.textSecondary} />
-          </View>
-        )}
-
-        {error && (
-          <View style={styles.centered}>
-            <ThemedText themeColor="textSecondary">
-              Failed to load menu. Please try again.
-            </ThemedText>
-          </View>
-        )}
-
-        {menuItems && (
-          <FlatList
-            data={menuItems}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <MenuItemCard item={item} />}
-            numColumns={2}
-            columnWrapperStyle={styles.row}
-            contentContainerStyle={styles.grid}
-            showsVerticalScrollIndicator={false}
-            style={styles.menuList}
-          />
-        )}
-
-        <CartSummary />
+        {content}
       </SafeAreaView>
     </ThemedView>
   );
@@ -314,28 +523,120 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-  contextBar: {
+  sectionHeader: {
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two + 4,
-    marginHorizontal: Spacing.three,
-    marginTop: Spacing.two,
-    borderRadius: Spacing.two,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
   },
-  contextText: {
-    textAlign: "center",
-    fontWeight: "600",
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700",
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  menuList: {
+  list: {
     flex: 1,
   },
+  listContent: {
+    paddingHorizontal: Spacing.three,
+    paddingBottom: Spacing.four,
+    gap: Spacing.two + 4,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+
+  // Theatre cards
+  theatreCard: {
+    borderRadius: Spacing.two + 4,
+    padding: Spacing.three,
+    gap: Spacing.one,
+  },
+  theatreName: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  screens: {
+    marginTop: Spacing.one,
+  },
+
+  // Step header (back button + context)
+  stepHeader: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.three,
+    gap: Spacing.one,
+  },
+  backButton: {
+    alignSelf: "flex-start",
+    paddingVertical: Spacing.one,
+  },
+  backText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#3c87f7",
+  },
+  stepTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+
+  // Showtime cards
+  showtimeCard: {
+    borderRadius: Spacing.two + 4,
+    padding: Spacing.three,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  showtimeMain: {
+    flex: 1,
+    gap: Spacing.one,
+    marginRight: Spacing.three,
+  },
+  movieTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  movieMeta: {
+    flexDirection: "row",
+    gap: Spacing.two,
+  },
+  showtimeDetails: {
+    alignItems: "flex-end",
+    gap: 2,
+  },
+  showtimeTime: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  showtimePrice: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#3c87f7",
+    marginTop: Spacing.one,
+  },
+
+  // Context bar
+  contextBar: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two + 4,
+    marginHorizontal: Spacing.three,
+    borderRadius: Spacing.two,
+    marginBottom: Spacing.two,
+  },
+  contextText: {
+    textAlign: "center",
+    fontWeight: "600",
+  },
+
+  // Menu grid
   grid: {
     paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.three,
+    paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
   },
   row: {

@@ -11,7 +11,7 @@ export class DimMenuItem {
   @Column({ length: 100 })
   category: string;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   size: string | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })

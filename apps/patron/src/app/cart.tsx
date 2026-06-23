@@ -9,14 +9,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/hooks/use-theme";
 import { useCartStore, type CartItem } from "@/stores/cart-store";
+import { useSessionStore } from "@/stores/session-store";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
-import { showtimeApi } from "@/lib/showtime-api";
 import { orderApi } from "@/lib/order-api";
 
 function generateIdempotencyKey(): string {
@@ -78,10 +77,8 @@ export default function CartScreen() {
   const totalPrice = useCartStore((s) => s.totalPrice());
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  const { data: showtime } = useQuery({
-    queryKey: ["currentShowtime"],
-    queryFn: showtimeApi.getCurrent,
-  });
+  const selectedTheatre = useSessionStore((s) => s.selectedTheatre);
+  const selectedShowtime = useSessionStore((s) => s.selectedShowtime);
 
   const tax = totalPrice * TAX_RATE;
   const grandTotal = totalPrice + tax;
@@ -103,14 +100,14 @@ export default function CartScreen() {
   };
 
   const handleCheckout = async () => {
-    if (!showtime || items.length === 0) return;
+    if (!selectedTheatre || !selectedShowtime || items.length === 0) return;
 
     setIsCheckingOut(true);
     try {
       const order = await orderApi.placeOrder({
-        theatreId: showtime.theatreId,
-        screenNumber: showtime.screen,
-        seatNumber: showtime.seatNumber,
+        theatreId: selectedTheatre.id,
+        screenNumber: selectedShowtime.screen,
+        seatNumber: "A1",
         items: items.map((i) => ({
           menuItemId: i.menuItemId,
           quantity: i.quantity,
@@ -210,7 +207,7 @@ export default function CartScreen() {
 
               <Pressable
                 onPress={handleCheckout}
-                disabled={isCheckingOut || !showtime}
+                disabled={isCheckingOut || !selectedTheatre || !selectedShowtime}
                 style={({ pressed }) => [
                   styles.checkoutButton,
                   pressed && styles.pressed,

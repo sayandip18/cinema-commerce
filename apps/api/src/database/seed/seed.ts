@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../../app.module';
+import { SeedModule } from './seed.module';
 import { DataSource } from 'typeorm';
 import { Theatre } from '../../theatre/entities/theatre.entity';
 import { Movie } from '../../movie/entities/movie.entity';
@@ -15,7 +15,7 @@ import {
 } from './seed.data';
 
 async function seed() {
-  const app = await NestFactory.createApplicationContext(AppModule);
+  const app = await NestFactory.createApplicationContext(SeedModule);
   const dataSource = app.get(DataSource);
 
   const theatreRepo = dataSource.getRepository(Theatre);
