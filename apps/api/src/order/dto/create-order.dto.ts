@@ -25,6 +25,9 @@ export class CreateOrderDto {
   @IsUUID()
   theatreId: string;
 
+  @IsUUID()
+  showtimeId: string;
+
   @IsString()
   @IsNotEmpty()
   screenNumber: string;

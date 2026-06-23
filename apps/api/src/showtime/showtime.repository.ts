@@ -17,4 +17,11 @@ export class ShowtimeRepository {
       order: { startTime: 'ASC' },
     });
   }
+
+  async findByIdWithMovie(id: string): Promise<Showtime | null> {
+    return this.repository.findOne({
+      where: { id },
+      relations: { movie: true },
+    });
+  }
 }

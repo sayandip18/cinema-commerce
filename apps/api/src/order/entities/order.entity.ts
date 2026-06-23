@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { Theatre } from '../../theatre/entities/theatre.entity';
+import { Showtime } from '../../showtime/entities/showtime.entity';
 import { OrderItem } from './order-item.entity';
 
 export enum OrderStatus {
@@ -25,6 +26,7 @@ export enum OrderStatus {
 @Entity('orders')
 @Index('IDX_ORDER_USER', ['userId'])
 @Index('IDX_ORDER_THEATRE', ['theatreId'])
+@Index('IDX_ORDER_SHOWTIME', ['showtimeId'])
 @Index('IDX_ORDER_IDEMPOTENCY', ['userId', 'idempotencyKey'], {
   unique: true,
   where: '"idempotencyKey" IS NOT NULL',
@@ -46,6 +48,13 @@ export class Order {
   @ManyToOne(() => Theatre)
   @JoinColumn({ name: 'theatreId' })
   theatre: Theatre;
+
+  @Column({ type: 'uuid' })
+  showtimeId: string;
+
+  @ManyToOne(() => Showtime)
+  @JoinColumn({ name: 'showtimeId' })
+  showtime: Showtime;
 
   @Column({ length: 50 })
   screenNumber: string;

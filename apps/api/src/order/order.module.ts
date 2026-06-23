@@ -10,6 +10,7 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { MenuModule } from '../menu/menu.module';
 import { OutboxModule } from '../outbox/outbox.module';
 import { UserModule } from '../user/user.module';
+import { ShowtimeModule } from '../showtime/showtime.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UserModule } from '../user/user.module';
     MenuModule,
     OutboxModule,
     UserModule,
+    ShowtimeModule,
   ],
   controllers: [OrderController],
   providers: [OrderService, OrderRepository, OrderReservationService],

@@ -27,4 +27,7 @@ export class OutboxEvent {
 
   @Column({ default: false })
   processed: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  retryCount: number;
 }

@@ -21,6 +21,31 @@ services:
     volumes:
       - patron_redis_data:/data
 
+  analytics-db:
+    image: postgres:16-alpine
+    container_name: analytics-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${ANALYTICS_DB_NAME:-analytics_db}
+      POSTGRES_USER: ${ANALYTICS_DB_USER:-analytics_user}
+      POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWORD:-analytics_pass}
+    ports:
+      - "${ANALYTICS_DB_PORT:-5433}:5432"
+    volumes:
+      - analytics_db_data:/var/lib/postgresql/data
+
+  analytics-redis:
+    image: redis:7-alpine
+    container_name: analytics-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "always"]
+    ports:
+      - "${ANALYTICS_REDIS_PORT:-6380}:6379"
+    volumes:
+      - analytics_redis_data:/data
+
 volumes:
   patron_db_data:
   patron_redis_data:
+  analytics_db_data:
+  analytics_redis_data:

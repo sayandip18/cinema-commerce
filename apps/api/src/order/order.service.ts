@@ -11,6 +11,8 @@ import { InventoryRepository } from '../inventory/inventory.repository';
 import { MenuRepository } from '../menu/menu.repository';
 import { MenuCacheService } from '../menu/menu-cache.service';
 import { UserRepository } from '../user/user.repository';
+import { ShowtimeService } from '../showtime/showtime.service';
+import { Showtime } from '../showtime/entities/showtime.entity';
 import { OutboxRepository } from '../outbox/outbox.repository';
 import { OutboxEvent } from '../outbox/outbox.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -25,6 +27,7 @@ export class OrderService {
     private readonly menuRepository: MenuRepository,
     private readonly menuCacheService: MenuCacheService,
     private readonly userRepository: UserRepository,
+    private readonly showtimeService: ShowtimeService,
     private readonly outboxRepository: OutboxRepository,
     private readonly dataSource: DataSource,
   ) {}
@@ -43,6 +46,17 @@ export class OrderService {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException(`User ${userId} not found`);
+    }
+
+    const showtime: Showtime | null =
+      await this.showtimeService.findByIdWithMovie(dto.showtimeId);
+    if (!showtime) {
+      throw new NotFoundException(`Showtime ${dto.showtimeId} not found`);
+    }
+    if (showtime.theatreId !== dto.theatreId) {
+      throw new BadRequestException(
+        'Showtime does not belong to the specified theatre',
+      );
     }
 
     const result = await this.dataSource.transaction(async (manager) => {
@@ -84,6 +98,8 @@ export class OrderService {
         itemSnapshots.push({
           menuItemId: item.menuItemId,
           name: menuItem.name,
+          category: menuItem.category,
+          size: menuItem.size,
           quantity: item.quantity,
           priceAtPurchase: Number(menuItem.basePrice),
           lineTotal,
@@ -96,6 +112,7 @@ export class OrderService {
       const order = new Order();
       order.userId = userId;
       order.theatreId = dto.theatreId;
+      order.showtimeId = dto.showtimeId;
       order.screenNumber = dto.screenNumber;
       order.seatNumber = dto.seatNumber;
       order.foodCost = foodCost;
@@ -116,7 +133,14 @@ export class OrderService {
         userId,
         ageGroup: user.ageGroup,
         gender: user.gender,
+        signupDate: user.createdAt.toISOString(),
         theatreId: dto.theatreId,
+        showtimeId: dto.showtimeId,
+        movieTitle: showtime.movie.title,
+        genre: showtime.movie.genre,
+        screenName: showtime.screen,
+        showStartTime: showtime.startTime.toISOString(),
+        durationMinutes: showtime.movie.durationMinutes,
         screenNumber: dto.screenNumber,
         seatNumber: dto.seatNumber,
         foodCost,
@@ -124,6 +148,7 @@ export class OrderService {
         total,
         status: OrderStatus.PENDING_PAYMENT,
         items: itemSnapshots,
+        createdAt: new Date().toISOString(),
       };
       await this.outboxRepository.saveWithManager(manager, outboxEvent);
 
