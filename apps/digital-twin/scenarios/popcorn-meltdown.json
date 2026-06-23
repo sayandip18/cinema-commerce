@@ -3,7 +3,7 @@
   "menuItemName": "Classic Popcorn",
   "initialStock": 200,
   "simulatedPatrons": 400,
-  "concurrency": 100,
+  "concurrency": 125,
   "quantityPerOrder": 1,
   "seatPrefix": "A"
 }

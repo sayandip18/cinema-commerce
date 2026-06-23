@@ -79,24 +79,10 @@ export class OrderService {
       const orderItems: OrderItem[] = [];
       const itemSnapshots: Record<string, unknown>[] = [];
 
+      // Build line items and totals from the pre-fetched menu data. No DB work
+      // here and — crucially — no inventory lock is taken yet.
       for (const item of dto.items) {
         const menuItem = menuItems.get(item.menuItemId)!;
-
-        const updated = await this.inventoryRepository.decrementQuantity(
-          manager,
-          dto.theatreId,
-          item.menuItemId,
-          item.quantity,
-        );
-
-        if (!updated) {
-          const inventory = await manager.findOne(Inventory, {
-            where: { theatreId: dto.theatreId, menuItemId: item.menuItemId },
-          });
-          throw new BadRequestException(
-            `Insufficient stock for "${menuItem.name}". Available: ${inventory?.quantity ?? 0}, requested: ${item.quantity}`,
-          );
-        }
 
         const lineTotal = Number(menuItem.basePrice) * item.quantity;
         foodCost += lineTotal;
@@ -163,6 +149,34 @@ export class OrderService {
         createdAt: new Date().toISOString(),
       };
       await this.outboxRepository.saveWithManager(manager, outboxEvent);
+
+      // Reserve stock last, immediately before commit, so the inventory row lock
+      // is held for the shortest possible window — that hold time is what bounds
+      // tail latency when a burst contends on a hot item. Decrement in a stable
+      // key order so concurrent multi-item orders can't deadlock against each
+      // other. A failed reservation throws, rolling back the order and outbox
+      // inserts above.
+      const itemsInLockOrder = [...dto.items].sort((a, b) =>
+        a.menuItemId.localeCompare(b.menuItemId),
+      );
+      for (const item of itemsInLockOrder) {
+        const updated = await this.inventoryRepository.decrementQuantity(
+          manager,
+          dto.theatreId,
+          item.menuItemId,
+          item.quantity,
+        );
+
+        if (!updated) {
+          const menuItem = menuItems.get(item.menuItemId)!;
+          const inventory = await manager.findOne(Inventory, {
+            where: { theatreId: dto.theatreId, menuItemId: item.menuItemId },
+          });
+          throw new BadRequestException(
+            `Insufficient stock for "${menuItem.name}". Available: ${inventory?.quantity ?? 0}, requested: ${item.quantity}`,
+          );
+        }
+      }
 
       return saved;
     });
