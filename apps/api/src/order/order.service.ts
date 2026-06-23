@@ -10,6 +10,9 @@ import { OrderRepository } from './order.repository';
 import { InventoryRepository } from '../inventory/inventory.repository';
 import { MenuRepository } from '../menu/menu.repository';
 import { MenuCacheService } from '../menu/menu-cache.service';
+import { UserRepository } from '../user/user.repository';
+import { OutboxRepository } from '../outbox/outbox.repository';
+import { OutboxEvent } from '../outbox/outbox.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 const TAX_RATE = 0.05;
@@ -21,6 +24,8 @@ export class OrderService {
     private readonly inventoryRepository: InventoryRepository,
     private readonly menuRepository: MenuRepository,
     private readonly menuCacheService: MenuCacheService,
+    private readonly userRepository: UserRepository,
+    private readonly outboxRepository: OutboxRepository,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -35,9 +40,15 @@ export class OrderService {
       }
     }
 
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found`);
+    }
+
     const result = await this.dataSource.transaction(async (manager) => {
       let foodCost = 0;
       const orderItems: OrderItem[] = [];
+      const itemSnapshots: Record<string, unknown>[] = [];
 
       for (const item of dto.items) {
         const menuItem = await this.menuRepository.findById(item.menuItemId);
@@ -69,6 +80,14 @@ export class OrderService {
         orderItem.quantity = item.quantity;
         orderItem.priceAtPurchase = Number(menuItem.basePrice);
         orderItems.push(orderItem);
+
+        itemSnapshots.push({
+          menuItemId: item.menuItemId,
+          name: menuItem.name,
+          quantity: item.quantity,
+          priceAtPurchase: Number(menuItem.basePrice),
+          lineTotal,
+        });
       }
 
       const taxes = Math.round(foodCost * TAX_RATE * 100) / 100;
@@ -87,6 +106,26 @@ export class OrderService {
       order.items = orderItems;
 
       const saved = await this.orderRepository.saveWithManager(manager, order);
+
+      const outboxEvent = new OutboxEvent();
+      outboxEvent.aggregateType = 'Order';
+      outboxEvent.aggregateId = saved.id;
+      outboxEvent.eventType = 'OrderCreated';
+      outboxEvent.payload = {
+        orderId: saved.id,
+        userId,
+        ageGroup: user.ageGroup,
+        gender: user.gender,
+        theatreId: dto.theatreId,
+        screenNumber: dto.screenNumber,
+        seatNumber: dto.seatNumber,
+        foodCost,
+        taxes,
+        total,
+        status: OrderStatus.PENDING_PAYMENT,
+        items: itemSnapshots,
+      };
+      await this.outboxRepository.saveWithManager(manager, outboxEvent);
 
       return saved;
     });

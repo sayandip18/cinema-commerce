@@ -27,6 +27,7 @@ import { OrderItem } from './order/entities/order-item.entity';
 import { Payment } from './payment/entities/payment.entity';
 import { Movie } from './movie/entities/movie.entity';
 import { Showtime } from './showtime/entities/showtime.entity';
+import { OutboxEvent } from './outbox/outbox.entity';
 
 @Module({
   imports: [
@@ -45,7 +46,18 @@ import { Showtime } from './showtime/entities/showtime.entity';
         database: db.database,
         username: db.username,
         password: db.password,
-        entities: [User, Theatre, MenuItem, Inventory, Order, OrderItem, Payment, Movie, Showtime],
+        entities: [
+          User,
+          Theatre,
+          MenuItem,
+          Inventory,
+          Order,
+          OrderItem,
+          Payment,
+          Movie,
+          Showtime,
+          OutboxEvent,
+        ],
         synchronize: true,
       }),
     }),
