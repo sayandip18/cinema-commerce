@@ -213,7 +213,6 @@ pnpm install
 ```bash
 cd apps/digital-twin
 npx tsx twin.ts --scenario scenarios/popcorn-meltdown.json
-npx tsx twin.ts --scenario scenarios/popcorn-meltdown-2500.json
 ```
 
 To target a different API host:

@@ -23,12 +23,9 @@ export class MenuService {
   ) {}
 
   async getAvailableItems(theatreId: string): Promise<AvailableMenuItem[]> {
-    const cached = await this.menuCacheService.get(theatreId);
-    if (cached) return cached;
-
-    const items = await this.loadAvailableItems(theatreId);
-    await this.menuCacheService.set(theatreId, items);
-    return items;
+    return this.menuCacheService.getOrLoad(theatreId, () =>
+      this.loadAvailableItems(theatreId),
+    );
   }
 
   private async loadAvailableItems(
